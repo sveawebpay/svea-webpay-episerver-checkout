@@ -1,12 +1,26 @@
 ﻿@model Foundation.Demo.ViewModels.DemoHeaderViewModel
 
+
+<div class="top-header">
+	<div class="container" style="">
+		<div class="row">
+			<div class="col-12">
+				<div class="top-header__banner-text">
+					<p>Plugin: @Model.PluginVersion</p>
+					<p>SDK: @Model.SdkVersion</p>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
 @if (Model.IsReadonlyMode)
 {
     @Html.RenderReadonlyMessage()
 }
 else
 {
-    <div class="top-header">
+	<div class="top-header">
         <div class="container" style="@(Model.LargeHeaderMenu ? "max-width: 1750px;" : "")">
             <div class="row">
                 <div class="col-12">

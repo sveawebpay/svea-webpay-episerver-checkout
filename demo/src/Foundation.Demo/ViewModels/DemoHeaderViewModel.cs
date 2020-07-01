@@ -10,5 +10,8 @@ namespace Foundation.Demo.ViewModels
         public bool ShowCommerceControls { get; set; }
         public DemoHomePage DemoHomePage => HomePage as DemoHomePage;
         public List<DemoUserViewModel> DemoUsers { get; set; }
+
+        public string PluginVersion { get; set; }
+        public string SdkVersion { get; set; }
     }
 }

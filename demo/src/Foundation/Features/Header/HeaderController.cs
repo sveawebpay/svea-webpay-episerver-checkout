@@ -6,6 +6,7 @@ using Foundation.Commerce.Customer.ViewModels;
 using Foundation.Demo.Models;
 using Foundation.Demo.ViewModels;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Web.Mvc;
 
 namespace Foundation.Features.Header
@@ -16,6 +17,8 @@ namespace Foundation.Features.Header
         private readonly IContentRouteHelper _contentRouteHelper;
         private readonly IContentLoader _contentLoader;
         private readonly IAddressBookService _addressBookService;
+        private static string _pluginVersion;
+        private static string _sdkVersion;
 
         public HeaderController(IHeaderViewModelFactory headerViewModelFactory,
             IContentRouteHelper contentRouteHelper,
@@ -32,7 +35,25 @@ namespace Foundation.Features.Header
         public ActionResult GetHeader(DemoHomePage homePage)
         {
             var content = _contentRouteHelper.Content;
-            return PartialView("_Header", _headerViewModelFactory.CreateHeaderViewModel<DemoHeaderViewModel>(content, homePage));
+            if (string.IsNullOrWhiteSpace(_pluginVersion))
+            {
+                var pluginAssembly = typeof(Svea.WebPay.Episerver.Checkout.SveaWebPayCheckoutService).Assembly;
+                var pluginVersionInfo = FileVersionInfo.GetVersionInfo(pluginAssembly.Location);
+                _pluginVersion = pluginVersionInfo.ProductVersion;
+            }
+
+            if (string.IsNullOrWhiteSpace(_sdkVersion))
+            {
+                var sdkAssembly = typeof(Svea.WebPay.SDK.SveaWebPayClient).Assembly;
+                var sdkVersionInfo = FileVersionInfo.GetVersionInfo(sdkAssembly.Location);
+                _sdkVersion = sdkVersionInfo.ProductVersion;
+            }
+
+            var demoHeaderViewModel = _headerViewModelFactory.CreateHeaderViewModel<DemoHeaderViewModel>(content, homePage);
+            demoHeaderViewModel.PluginVersion = _pluginVersion;
+            demoHeaderViewModel.SdkVersion = _sdkVersion;
+
+            return PartialView("_Header", demoHeaderViewModel);
         }
 
         [ChildActionOnly]
