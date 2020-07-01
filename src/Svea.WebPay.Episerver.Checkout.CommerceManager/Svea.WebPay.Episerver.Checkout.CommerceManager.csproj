@@ -1,0 +1,57 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net461</TargetFramework>
+    <PackageId>Svea.WebPay.Episerver.Checkout.CommerceManager</PackageId>
+    <Authors>Svea WebPay</Authors>
+    <Description>Library for Svea WebPay Checkout integration with Episerver Commerce</Description>
+    <Copyright>Svea Ekonomi AB</Copyright>
+    <PackageTags>Svea Checkout EPiServerModulePackage ThirdPartyAddOn PaymentProvider Episerver Commerce</PackageTags>
+    <PackageIcon>icon.png</PackageIcon>
+    <RepositoryType>git</RepositoryType>
+    <PackageReleaseNotes>Checkout handling.</PackageReleaseNotes>
+    <AssemblyName>Svea.WebPay.Episerver.Checkout.CommerceManager</AssemblyName>
+    <RootNamespace>Svea.WebPay.Episerver.Checkout.CommerceManager</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Apps\Order\Payments\Plugins\SveaWebPayCheckout\ConfigurePayment.ascx" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Apps\Order\Payments\Plugins\SveaWebPayCheckout\ConfigurePayment.ascx" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="EPiServer.Commerce.Core" Version="13.7.1" />
+    <PackageReference Include="Svea.WebPay.SDK" Version="0.1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Svea.WebPay.Episerver.Checkout.Common\Svea.WebPay.Episerver.Checkout.Common.csproj" PrivateAssets="all" />
+    <ProjectReference Include="..\Svea.WebPay.Episerver.Checkout\Svea.WebPay.Episerver.Checkout.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="System.Web.Extensions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Apps\Order\Payments\Plugins\SveaWebPayCheckout\ConfigurePayment.ascx.cs">
+      <SubType>ASPXCodeBehind</SubType>
+      <DependentUpon>ConfigurePayment.ascx</DependentUpon>
+    </Compile>
+    <Compile Update="Apps\Order\Payments\Plugins\SveaWebPayCheckout\ConfigurePayment.ascx.designer.cs">
+      <DependentUpon>ConfigurePayment.ascx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="../../icon.png">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
+  </ItemGroup>
+
+</Project>

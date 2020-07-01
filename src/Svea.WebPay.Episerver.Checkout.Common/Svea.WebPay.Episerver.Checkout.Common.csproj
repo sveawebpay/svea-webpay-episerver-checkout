@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net461</TargetFramework>
+    <AssemblyName>Svea.WebPay.Episerver.Checkout.Common</AssemblyName>
+    <RootNamespace>Svea.WebPay.Episerver.Checkout.Common</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="EPiServer.CMS.Core" Version="11.13.0" />
+    <PackageReference Include="EPiServer.Commerce.Core" Version="13.7.1" />
+    <PackageReference Include="ISO3166" Version="1.0.1" />
+    <PackageReference Include="Svea.WebPay.SDK" Version="0.1.0" />
+
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="System.Data.DataSetExtensions" />
+  </ItemGroup>
+
+</Project>

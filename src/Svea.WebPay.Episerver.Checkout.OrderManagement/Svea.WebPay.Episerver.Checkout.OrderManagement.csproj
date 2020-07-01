@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net461</TargetFramework>
+    <AssemblyName>Svea.WebPay.Episerver.Checkout.OrderManagement</AssemblyName>
+    <RootNamespace>Svea.WebPay.Episerver.Checkout.OrderManagement</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Svea.WebPay.Episerver.Checkout.Common\Svea.WebPay.Episerver.Checkout.Common.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="System.Data.DataSetExtensions" />
+  </ItemGroup>
+
+</Project>

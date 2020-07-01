@@ -1,0 +1,48 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29020.237
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{AEE1C5EC-6D2C-47E7-BD2B-8F7DD0F30AEF}"
+	ProjectSection(SolutionItems) = preProject
+		nuget.config = nuget.config
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Svea.WebPay.Episerver.Checkout", "src\Svea.WebPay.Episerver.Checkout\Svea.WebPay.Episerver.Checkout.csproj", "{321F9C1D-D7C3-4457-BD3E-A86A34EDB722}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Svea.WebPay.Episerver.Checkout.OrderManagement", "src\Svea.WebPay.Episerver.Checkout.OrderManagement\Svea.WebPay.Episerver.Checkout.OrderManagement.csproj", "{98A16D4E-27D1-4F6A-B9CA-FDACC7630A9C}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Svea.WebPay.Episerver.Checkout.Common", "src\Svea.WebPay.Episerver.Checkout.Common\Svea.WebPay.Episerver.Checkout.Common.csproj", "{649DD393-1ABD-40B6-B748-A1E358B7AF30}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Svea.WebPay.Episerver.Checkout.CommerceManager", "src\Svea.WebPay.Episerver.Checkout.CommerceManager\Svea.WebPay.Episerver.Checkout.CommerceManager.csproj", "{62A49788-56AF-4396-83B1-64C662B058EC}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{321F9C1D-D7C3-4457-BD3E-A86A34EDB722}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{321F9C1D-D7C3-4457-BD3E-A86A34EDB722}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{321F9C1D-D7C3-4457-BD3E-A86A34EDB722}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{321F9C1D-D7C3-4457-BD3E-A86A34EDB722}.Release|Any CPU.Build.0 = Release|Any CPU
+		{98A16D4E-27D1-4F6A-B9CA-FDACC7630A9C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{98A16D4E-27D1-4F6A-B9CA-FDACC7630A9C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{98A16D4E-27D1-4F6A-B9CA-FDACC7630A9C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{98A16D4E-27D1-4F6A-B9CA-FDACC7630A9C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{649DD393-1ABD-40B6-B748-A1E358B7AF30}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{649DD393-1ABD-40B6-B748-A1E358B7AF30}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{649DD393-1ABD-40B6-B748-A1E358B7AF30}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{649DD393-1ABD-40B6-B748-A1E358B7AF30}.Release|Any CPU.Build.0 = Release|Any CPU
+		{62A49788-56AF-4396-83B1-64C662B058EC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{62A49788-56AF-4396-83B1-64C662B058EC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{62A49788-56AF-4396-83B1-64C662B058EC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{62A49788-56AF-4396-83B1-64C662B058EC}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {FCD1C0CE-CCF4-43A7-B044-84377A7F6197}
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,12 @@
+﻿@model  Foundation.Commerce.Order.Payments.SveaWebPayCheckoutPaymentOption
+
+@Html.HiddenFor(model => model.PaymentMethodId)
+
+<br />
+<div class="row">
+	<div class="col-12">
+		<div class="alert alert-info square-box">
+			@Html.Raw(Model.HtmlSnippet)
+		</div>
+	</div>
+</div>

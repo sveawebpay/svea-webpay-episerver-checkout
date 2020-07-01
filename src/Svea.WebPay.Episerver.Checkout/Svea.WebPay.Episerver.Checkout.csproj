@@ -1,0 +1,47 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net461</TargetFramework>
+    <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);CopyProjectReferencesToPackage</TargetsForTfmSpecificBuildOutput>
+    <PackageId>Svea.WebPay.Episerver.Checkout</PackageId>
+    <Authors>Svea WebPay</Authors>
+    <Description>Library for Svea WebPay Checkout integration with Episerver Commerce</Description>
+    <Copyright>Svea Ekonomi AB</Copyright>
+    <PackageTags>Svea Checkout EPiServerModulePackage ThirdPartyAddOn PaymentProvider Episerver Commerce</PackageTags>
+    <PackageIcon>icon.png</PackageIcon>
+    <RepositoryType>git</RepositoryType>
+    <PackageReleaseNotes>Checkout handling.</PackageReleaseNotes>
+    <AssemblyName>Svea.WebPay.Episerver.Checkout</AssemblyName>
+    <RootNamespace>Svea.WebPay.Episerver.Checkout</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="EPiServer.CMS.Core" Version="11.13.0" />
+    <PackageReference Include="EPiServer.Commerce.Core" Version="13.7.1" />
+    <PackageReference Include="ISO3166" Version="1.0.1" />
+    <PackageReference Include="Svea.WebPay.SDK" Version="0.1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Svea.WebPay.Episerver.Checkout.Common\Svea.WebPay.Episerver.Checkout.Common.csproj" PrivateAssets="all" />
+    <ProjectReference Include="..\Svea.WebPay.Episerver.Checkout.OrderManagement\Svea.WebPay.Episerver.Checkout.OrderManagement.csproj" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="System.Data.DataSetExtensions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="../../icon.png">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
+  </ItemGroup>
+
+  <Target Name="CopyProjectReferencesToPackage" DependsOnTargets="ResolveReferences">
+    <ItemGroup>
+      <BuildOutputInPackage Include="@(ReferenceCopyLocalPaths-&gt;WithMetadataValue('ReferenceSourceTarget', 'ProjectReference'))" />
+    </ItemGroup>
+  </Target>
+
+</Project>
