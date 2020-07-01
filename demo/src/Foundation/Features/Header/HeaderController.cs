@@ -37,7 +37,7 @@ namespace Foundation.Features.Header
             var content = _contentRouteHelper.Content;
             if (string.IsNullOrWhiteSpace(_pluginVersion))
             {
-                var pluginAssembly = typeof(Svea.WebPay.Episerver.Checkout.SveaWebPayCheckoutService).Assembly;
+                var pluginAssembly = typeof(Foundation.Startup).Assembly;
                 var pluginVersionInfo = FileVersionInfo.GetVersionInfo(pluginAssembly.Location);
                 _pluginVersion = pluginVersionInfo.ProductVersion;
             }
