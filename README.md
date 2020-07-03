@@ -223,12 +223,14 @@ public IPurchaseOrder CreatePurchaseOrderForSveaWebPay(long sveaWebPayOrderId, D
             payment.PaymentMethodId = paymentRow.PaymentMethodId;
             payment.PaymentMethodName = Constants.SveaWebPayCheckoutSystemKeyword;
             payment.Amount = cart.GetTotal(_orderGroupCalculator).Amount;
+            
+            var isSaleTransaction = order.Payment.PaymentMethodType == PaymentMethodType.DirectBank || order.Payment.PaymentMethodType == PaymentMethodType.Trustly || order.Payment.PaymentMethodType == PaymentMethodType.Swish;
 
-            payment.Status = order.Payment.PaymentMethodType == PaymentMethodType.DirectBank || order.Payment.PaymentMethodType == PaymentMethodType.Trustly
+            payment.Status = isSaleTransaction
                 ? PaymentStatus.Processed.ToString()
                 : PaymentStatus.Pending.ToString();
 
-            payment.TransactionType = order.Payment.PaymentMethodType == PaymentMethodType.DirectBank || order.Payment.PaymentMethodType == PaymentMethodType.Trustly
+            payment.TransactionType = isSaleTransaction
                 ? TransactionType.Sale.ToString()
                 : TransactionType.Authorization.ToString();
 
