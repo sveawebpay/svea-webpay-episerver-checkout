@@ -192,11 +192,13 @@ namespace Foundation.Commerce.Order.Services
             payment.PaymentMethodName = Constants.SveaWebPayCheckoutSystemKeyword;
             payment.Amount = cart.GetTotal(_orderGroupCalculator).Amount;
 
-            payment.Status = order.Payment.PaymentMethodType == PaymentMethodType.DirectBank || order.Payment.PaymentMethodType == PaymentMethodType.Trustly
+            var isSaleTransaction = order.Payment.PaymentMethodType == PaymentMethodType.DirectBank || order.Payment.PaymentMethodType == PaymentMethodType.Trustly || order.Payment.PaymentMethodType == PaymentMethodType.Swish;
+
+            payment.Status = isSaleTransaction
                 ? PaymentStatus.Processed.ToString()
                 : PaymentStatus.Pending.ToString();
 
-            payment.TransactionType = order.Payment.PaymentMethodType == PaymentMethodType.DirectBank || order.Payment.PaymentMethodType == PaymentMethodType.Trustly
+            payment.TransactionType = isSaleTransaction
                 ? TransactionType.Sale.ToString()
                 : TransactionType.Authorization.ToString();
 
