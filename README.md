@@ -53,7 +53,7 @@ Merchant settings
 Push Uri: https://{Your domain}/api/sveawebpay/Push/{orderGroupId}/{checkout.order.uri}
 Terms Uri: https://{Your domain}/payment-completed.pdf
 Checkout Uri: https://{Your domain}/en/checkout/?isGuest=1
-ConfirmationUri Uri: {Your domain}/en/order-confirmation/?orderNumber={orderGroupId}
+ConfirmationUri Uri: https://{Your domain}/en/order-confirmation/?orderNumber={orderGroupId}
 Checkout Validation Callback Uri: https://{Your domain}/api/sveawebpay/Validation/{orderGroupId}/{checkout.order.uri}
 Active Part Payment Campaigns: {campaignId1;campaignId2;campaignId3}
 Promoted Part Payment Campaign: {campaignId}
@@ -411,7 +411,7 @@ namespace Foundation.Commerce.Order
             var cart = _orderRepository.Load<ICart>(orderGroupId);
             if (cart == null)
             {
-				_log.Log(Level.Information, $"Purchase order or cart with orderId {orderGroupId} not found");
+                _log.Log(Level.Information, $"Purchase order or cart with orderId {orderGroupId} not found");
                 status = HttpStatusCode.NotFound;
                 return null;
             }
@@ -419,7 +419,7 @@ namespace Foundation.Commerce.Order
             var cartSveaWebPayOrderId = cart.Properties[Constants.SveaWebPayOrderIdField]?.ToString();
             if (cartSveaWebPayOrderId == null || !cartSveaWebPayOrderId.Equals(sveaWebPayOrderId.ToString()))
             {
-				_log.Log(Level.Information, $"cart: {orderGroupId} with svea webpay order id {cartSveaWebPayOrderId} does not equal svea webpay order id {sveaWebPayOrderId} sent in the request");
+                _log.Log(Level.Information, $"cart: {orderGroupId} with svea webpay order id {cartSveaWebPayOrderId} does not equal svea webpay order id {sveaWebPayOrderId} sent in the request");
                 status = HttpStatusCode.Conflict;
                 return null;
             }
@@ -428,7 +428,7 @@ namespace Foundation.Commerce.Order
             if (!order.Status.Equals(CheckoutOrderStatus.Final))
             {
                 // Won't create order, Svea webpay checkout not complete
-				_log.Log(Level.Information, $"Svea webpay order id {cartSveaWebPayOrderId} not completed");
+                _log.Log(Level.Information, $"Svea webpay order id {cartSveaWebPayOrderId} not completed");
                 status = HttpStatusCode.NotFound;
                 return null;
             }
