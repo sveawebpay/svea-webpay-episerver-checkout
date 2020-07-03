@@ -20,7 +20,7 @@ namespace Foundation.SystemTests.Tests.PaymentTest.PaymentSaleTests
         {
             var expected = new List<Dictionary<string, string>>
             {
-                new Dictionary<string, string> { { PaymentColumns.TransactionType, TransactionType.Authorization }, { PaymentColumns.Status, PaymentStatus.Processed }}
+                new Dictionary<string, string> { { PaymentColumns.TransactionType, TransactionType.Sale }, { PaymentColumns.Status, PaymentStatus.Processed }}
             };
 
 
@@ -34,6 +34,11 @@ namespace Foundation.SystemTests.Tests.PaymentTest.PaymentSaleTests
 
             // Assert
             var order = await _sveaClient.PaymentAdmin.GetOrder(long.Parse(paymentOrderLink));
+
+            // Operations
+            Assert.That(order.OrderStatus, Is.EqualTo(Svea.WebPay.SDK.PaymentAdminApi.OrderStatus.Delivered));
+            Assert.That(order.PaymentType, Is.EqualTo(Svea.WebPay.SDK.PaymentAdminApi.PaymentType.Swish));
+            Assert.That(order.AvailableActions.Count, Is.EqualTo(0));
         }
     }
 }

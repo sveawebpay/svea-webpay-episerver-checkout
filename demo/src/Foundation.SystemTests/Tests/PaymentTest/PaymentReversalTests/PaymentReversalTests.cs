@@ -38,7 +38,6 @@ namespace Foundation.SystemTests.Tests.PaymentTest.PaymentReversalTests
             // Operations
             Assert.That(order.OrderStatus, Is.EqualTo(Svea.WebPay.SDK.PaymentAdminApi.OrderStatus.Delivered));
             Assert.That(order.PaymentType, Is.EqualTo(Svea.WebPay.SDK.PaymentAdminApi.PaymentType.Card));
-            Assert.That(order.AvailableActions.Count, Is.EqualTo(2));
             Assert.That(order.AvailableActions, Is.EquivalentTo(new List<string> { "CanCancelOrder", "CanCancelAmount" }));
             Assert.That(order.OrderAmount.Value, Is.EqualTo(_totalAmount * 100));
             Assert.That(order.CancelledAmount.Value, Is.EqualTo(products[0].Quantity * products[0].UnitPrice * 100));
@@ -79,7 +78,6 @@ namespace Foundation.SystemTests.Tests.PaymentTest.PaymentReversalTests
             // Operations
             Assert.That(order.OrderStatus, Is.EqualTo(Svea.WebPay.SDK.PaymentAdminApi.OrderStatus.Delivered));
             Assert.That(order.PaymentType, Is.EqualTo(Svea.WebPay.SDK.PaymentAdminApi.PaymentType.Card));
-            Assert.That(order.AvailableActions.Count, Is.EqualTo(2));
             Assert.That(order.AvailableActions, Is.EquivalentTo(new List<string> { "CanCancelOrder", "CanCancelAmount" }));
             Assert.That(order.OrderAmount.Value, Is.EqualTo(_totalAmount * 100));
             Assert.That(order.CancelledAmount.Value, Is.EqualTo(products.Sum(x => x.Quantity * x.UnitPrice * 100)));
@@ -129,6 +127,90 @@ namespace Foundation.SystemTests.Tests.PaymentTest.PaymentReversalTests
             Assert.IsTrue(order.OrderRows.Any(item => item.Name.ToUpper() == products[1].Name.ToUpper()));
 
             Assert.IsNull(order.Deliveries);
+        }
+
+        [Test]
+        [Category(TestCategory.Card)]
+        [TestCaseSource(nameof(TestData), new object[] { false })]
+        public async Task PartialReversal_With_InvoiceAsync(Product[] products)
+        {
+            // "Credit" is the terminology used in EPiServer to qualify a Reversal
+            var expected = new List<Dictionary<string, string>>
+            {
+                new Dictionary<string, string> { { PaymentColumns.TransactionType, TransactionType.Authorization }, { PaymentColumns.Status, PaymentStatus.Processed } },
+                new Dictionary<string, string> { { PaymentColumns.TransactionType, TransactionType.Capture       }, { PaymentColumns.Status, PaymentStatus.Processed } },
+                new Dictionary<string, string> { { PaymentColumns.TransactionType, TransactionType.Credit        }, { PaymentColumns.Status, PaymentStatus.Processed } },
+            };
+
+            GoToThankYouPage(products, paymentMethod: PaymentMethods.Option.Invoice);
+
+            GoToManagerPage()
+                .CreateCapture(_orderId)
+                .CreateReversal(_orderId, new Product[] { products[0] }, partial: true)
+                .AssertPaymentOrderTransactions(_orderId, expected, out var paymentOrderLink);
+
+            var order = await _sveaClient.PaymentAdmin.GetOrder(long.Parse(paymentOrderLink));
+
+            // Operations
+            Assert.That(order.OrderStatus, Is.EqualTo(Svea.WebPay.SDK.PaymentAdminApi.OrderStatus.Delivered));
+            Assert.That(order.PaymentType, Is.EqualTo(Svea.WebPay.SDK.PaymentAdminApi.PaymentType.Invoice));
+            Assert.That(order.AvailableActions.Count, Is.EqualTo(0));
+            Assert.That(order.OrderAmount.Value, Is.EqualTo(_totalAmount * 100));
+            Assert.That(order.CancelledAmount.Value, Is.EqualTo(0));
+
+            Assert.That(order.OrderRows.Count, Is.EqualTo(0));
+
+            var delivery = order.Deliveries.First();
+            Assert.That(delivery.CreditedAmount, Is.EqualTo(products[0].UnitPrice * products[0].Quantity * 100));
+            Assert.That(delivery.DeliveryAmount, Is.EqualTo(_totalAmount * 100));
+            Assert.That(delivery.AvailableActions, Is.EquivalentTo(new List<string> { "CanCreditNewRow", "CanCreditOrderRows" }));
+            Assert.That(delivery.Credits.Count, Is.EqualTo(1));
+            Assert.That(delivery.Credits[0].Amount, Is.EqualTo(products[0].UnitPrice * products[0].Quantity * -100));
+            Assert.IsTrue(delivery.OrderRows.Any(item => item.Name.ToUpper() == products[0].Name.ToUpper()));
+            Assert.IsTrue(delivery.OrderRows.Any(item => item.Name.ToUpper() == products[1].Name.ToUpper()));
+        }
+
+        [Test]
+        [Category(TestCategory.Card)]
+        [TestCaseSource(nameof(TestData), new object[] { false })]
+        public async Task FullReversal_With_InvoiceAsync(Product[] products)
+        {
+            // "Credit" is the terminology used in EPiServer to qualify a Reversal
+            var expected = new List<Dictionary<string, string>>
+            {
+                new Dictionary<string, string> { { PaymentColumns.TransactionType, TransactionType.Authorization }, { PaymentColumns.Status, PaymentStatus.Processed } },
+                new Dictionary<string, string> { { PaymentColumns.TransactionType, TransactionType.Capture       }, { PaymentColumns.Status, PaymentStatus.Processed } },
+                new Dictionary<string, string> { { PaymentColumns.TransactionType, TransactionType.Credit        }, { PaymentColumns.Status, PaymentStatus.Processed } },
+            };
+
+            // Arrange
+            GoToThankYouPage(products, paymentMethod: PaymentMethods.Option.Invoice);
+
+
+            // Act
+            GoToManagerPage()
+                .CreateCapture(_orderId)
+                .CreateReversal(_orderId, products, partial: false)
+                .AssertPaymentOrderTransactions(_orderId, expected, out var paymentOrderLink);
+
+            // Assert
+            var order = await _sveaClient.PaymentAdmin.GetOrder(long.Parse(paymentOrderLink));
+
+            // Operations
+            Assert.That(order.OrderStatus, Is.EqualTo(Svea.WebPay.SDK.PaymentAdminApi.OrderStatus.Delivered));
+            Assert.That(order.PaymentType, Is.EqualTo(Svea.WebPay.SDK.PaymentAdminApi.PaymentType.Invoice));
+            Assert.That(order.AvailableActions.Count, Is.EqualTo(0));
+            Assert.That(order.OrderAmount.Value, Is.EqualTo(_totalAmount * 100));
+            Assert.That(order.CancelledAmount.Value, Is.EqualTo(0));
+
+            Assert.That(order.OrderRows.Count, Is.EqualTo(0));
+
+            var delivery = order.Deliveries.First();
+            Assert.That(delivery.CreditedAmount, Is.EqualTo(_totalAmount * 100));
+            Assert.That(delivery.DeliveryAmount, Is.EqualTo(_totalAmount * 100));
+            Assert.That(delivery.AvailableActions.Count, Is.EqualTo(0));
+            Assert.That(delivery.Credits.Count, Is.EqualTo(1));
+            Assert.That(delivery.Credits[0].Amount, Is.EqualTo(_totalAmount * -100));
         }
     }
 }

@@ -111,9 +111,10 @@ namespace Foundation.SystemTests.Tests.PaymentTest
                 .ContinueToCheckout.ClickAndGo()
                 .ContinueAsGuest.IsVisible.WaitTo.BeTrue()
                 .ContinueAsGuest.ClickAndGo<CheckoutPage>()
+                .RefreshPage()
+                .SveaCheckout.Click()
                 .TotalAmount.StoreAmount(out _totalAmountStr, ".")
-                .TotalAmount.StorePrice(out _totalAmount, ".")
-                .SveaCheckout.Click();
+                .TotalAmount.StorePrice(out _totalAmount, ".");
         }
 
         public SveaPaymentFramePage GoToSveaPaymentFrame(Product[] products)

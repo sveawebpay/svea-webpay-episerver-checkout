@@ -41,7 +41,6 @@ namespace Foundation.SystemTests.Tests.PaymentTest.PaymentCaptureTests
             // Operations
             Assert.That(order.OrderStatus, Is.EqualTo(Svea.WebPay.SDK.PaymentAdminApi.OrderStatus.Delivered));
             Assert.That(order.PaymentType, Is.EqualTo(Svea.WebPay.SDK.PaymentAdminApi.PaymentType.Card));
-            Assert.That(order.AvailableActions.Count, Is.EqualTo(2));
             Assert.That(order.AvailableActions, Is.EquivalentTo(new List<string> { "CanCancelOrder", "CanCancelAmount" }));
             Assert.That(order.OrderAmount.Value, Is.EqualTo(_totalAmount * 100));
 

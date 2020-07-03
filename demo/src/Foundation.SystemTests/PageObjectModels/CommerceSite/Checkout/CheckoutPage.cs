@@ -13,6 +13,7 @@ namespace Foundation.SystemTests.PageObjectModels.CommerceSite.Checkout
         [FindByXPath("//p[contains(text(),'Total for cart')]/following-sibling::p")]
         public Text<_> TotalAmount { get; private set; }
 
+        [Wait(1, TriggerEvents.BeforeClick)]
         [FindByContent(TermMatch.Contains, "Svea Checkout")]
         public Label<_> SveaCheckout { get; private set; }
     }

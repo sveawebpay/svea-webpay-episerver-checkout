@@ -35,31 +35,23 @@ namespace Foundation.SystemTests.Tests.PaymentTest
             // Assert
             var order = await _sveaClient.PaymentAdmin.GetOrder(long.Parse(paymentOrderLink));
 
-            //// Global Order
-            //Assert.That(order.PaymentOrderResponse.Amount.Value, Is.EqualTo(double.Parse(_totalAmount) * 100));
-            //Assert.That(order.PaymentOrderResponse.Currency.ToString(), Is.EqualTo("SEK"));
-            //Assert.That(order.PaymentOrderResponse.State, Is.EqualTo(State.Ready));
+            // Operations
+            Assert.That(order.OrderStatus, Is.EqualTo(Svea.WebPay.SDK.PaymentAdminApi.OrderStatus.Open));
+            Assert.That(order.PaymentType, Is.EqualTo(Svea.WebPay.SDK.PaymentAdminApi.PaymentType.Card));
+            Assert.That(order.AvailableActions, Is.EquivalentTo(new List<string> { "CanDeliverOrder", "CanCancelOrder", "CanCancelAmount" }));
+            Assert.That(order.CancelledAmount.Value, Is.EqualTo(0));
 
-            //// Operations
-            //Assert.That(order.Operations[LinkRelation.CreatePaymentOrderReversal], Is.Null);
-            //Assert.That(order.Operations[LinkRelation.CreateCancellation], Is.Not.Null);
-            //Assert.That(order.Operations[LinkRelation.CreatePaymentOrderCapture], Is.Not.Null);
-            //Assert.That(order.Operations[LinkRelation.PaidPaymentOrder], Is.Not.Null);
+            Assert.That(order.OrderRows.Count, Is.EqualTo(products.Count() + 1));
 
-            //// Transactions
-            //Assert.That(order.PaymentOrderResponse.CurrentPayment.Payment.Transactions.TransactionList.Count, Is.EqualTo(1));
-            //Assert.That(order.PaymentOrderResponse.CurrentPayment.Payment.Transactions.TransactionList.First(x => x.Type == TransactionType.Authorization).State,
-            //            Is.EqualTo(State.Completed));
+            for (var i = 0; i < products.Count(); i++)
+            {
+                var orderRow = order.OrderRows.ElementAt(i);
+                Assert.That(orderRow.Name.ToUpper(), Is.EqualTo(products[i].Name.ToUpper()));
+                Assert.That(orderRow.Quantity.Value, Is.EqualTo(products[i].Quantity * 100));
+                Assert.That(orderRow.UnitPrice.Value, Is.EqualTo((products[i].UnitPrice + products[i].UnitPrice * 0.25m) * 100));
+            }
 
-            //// Order Items
-            //Assert.That(order.PaymentOrderResponse.OrderItems.OrderItemList.Count, Is.EqualTo(products.Count() + 1));
-            //for (var i = 0; i < products.Count(); i++)
-            //{
-            //    Assert.That(order.PaymentOrderResponse.OrderItems.OrderItemList.ElementAt(i).Name, Is.EqualTo(products[i].Name));
-            //    Assert.That(order.PaymentOrderResponse.OrderItems.OrderItemList.ElementAt(i).UnitPrice.Value, Is.EqualTo(products[i].UnitPrice * 100));
-            //    Assert.That(order.PaymentOrderResponse.OrderItems.OrderItemList.ElementAt(i).Quantity, Is.EqualTo(products[i].Quantity));
-            //    Assert.That(order.PaymentOrderResponse.OrderItems.OrderItemList.ElementAt(i).Amount.Value, Is.EqualTo(products[i].UnitPrice * 100 * products[i].Quantity));
-            //}
+            Assert.IsNull(order.Deliveries);
         }
     }
 }
