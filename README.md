@@ -30,15 +30,15 @@ Login into Commerce Manager and open Administration -> Order System -> Payments.
 - Payment Class: choose MediaChase.Commerce.Orders.OtherPayment
 - IsActive: Yes
 
-BILD
+![image](https://user-images.githubusercontent.com/1358504/86447302-726e1000-bd15-11ea-9cd4-540be26b194c.png)
 
 In Markets tab select market for which this payment will be available.
 
-BILD
+![image](https://user-images.githubusercontent.com/1358504/86447399-99c4dd00-bd15-11ea-9de2-54a15bf41ffb.png)
 
 **Press OK to save and then configure the newly added payment. Parameters won't be visible before it has been saved.** 
 
-BILD
+![image](https://user-images.githubusercontent.com/1358504/86447750-1952ac00-bd16-11ea-9d68-52adf775c803.png)
 
 Svea WebPay connection settings
 ```
@@ -50,11 +50,11 @@ Secret: {Your secret}
 
 Merchant settings
 ```
-Push Uri: {Your domain}/api/sveawebpay/Push/{orderGroupId}/{checkout.order.uri}
-Terms Uri: {Your domain}/payment-completed.pdf
-Checkout Uri: {Your domain}/en/checkout/?isGuest=1
+Push Uri: https://{Your domain}/api/sveawebpay/Push/{orderGroupId}/{checkout.order.uri}
+Terms Uri: https://{Your domain}/payment-completed.pdf
+Checkout Uri: https://{Your domain}/en/checkout/?isGuest=1
 ConfirmationUri Uri: {Your domain}/en/order-confirmation/?orderNumber={orderGroupId}
-Checkout Validation Callback Uri: {Your domain}/api/sveawebpay/Validation/{orderGroupId}/{checkout.order.uri}
+Checkout Validation Callback Uri: https://{Your domain}/api/sveawebpay/Validation/{orderGroupId}/{checkout.order.uri}
 Active Part Payment Campaigns: {campaignId1;campaignId2;campaignId3}
 Promoted Part Payment Campaign: {campaignId}
 ```
