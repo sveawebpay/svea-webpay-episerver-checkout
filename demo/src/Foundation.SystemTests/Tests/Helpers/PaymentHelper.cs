@@ -3,6 +3,7 @@ using Foundation.SystemTests.PageObjectModels;
 using Foundation.SystemTests.PageObjectModels.Payment;
 using Foundation.SystemTests.Services;
 using Foundation.SystemTests.PageObjectModels.CommerceSite.Base;
+using System;
 
 namespace Foundation.SystemTests.Test.Helpers
 {
@@ -15,6 +16,13 @@ namespace Foundation.SystemTests.Test.Helpers
             .PaymentMethods.Card.Click()
             .Submit.ClickAndGo<CardPaymentPage>()
             .CardNumber.IsVisible.WaitTo.BeTrue()
+            .Do(x => 
+            {
+                if(x.DebitCard.Exists(new SearchOptions { IsSafely = true, Timeout = TimeSpan.FromSeconds(1) }))
+                {
+                    x.DebitCard.Click();
+                }
+            })
             .CardNumber.Set(TestDataService.CreditCardNumber)
             .Expiry.Set(TestDataService.CreditCardExpiratioDate)
             .Cvc.Set(TestDataService.CreditCardCvc)

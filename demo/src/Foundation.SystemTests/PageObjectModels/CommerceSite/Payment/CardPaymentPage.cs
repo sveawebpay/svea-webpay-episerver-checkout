@@ -6,6 +6,12 @@ namespace Foundation.SystemTests.PageObjectModels.Payment
 
     public class CardPaymentPage : Page<_>
     {
+        [FindByDescendantAttribute("value", values: "credit")]
+        public Label<_> CreditCard { get; set; }
+
+        [FindByDescendantAttribute("value", values: "debit")]
+        public Label<_> DebitCard { get; set; }
+
         [FindById("CardNumber")] 
         public TextInput<_> CardNumber { get; set; }
 
