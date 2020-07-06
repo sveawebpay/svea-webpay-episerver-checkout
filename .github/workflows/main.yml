@@ -238,14 +238,14 @@ jobs:
           publish-profile: ${{ secrets.AZURE_CM_PRO_PUBLISH_PROFILE }}
           
           
-      - name: Run UI Tests
-        if: ${{ needs.variables.outputs.ENVIRONMENT == 'uat'}}
-        run: dotnet test --configuration ${{ env.Configuration }} demo/src/Foundation.SystemTests/Foundation.SystemTests.csproj
-        env:
-          Credentials:MerchantId: ${{ secrets.MERCHANT_ID }}
-          Credentials:Secret: ${{ secrets.MERCHANT_SECRET }}
-          FoundationCommerce: ${{ needs.variables.outputs.SITE_URL }}
-          ManagerCommerce: ${{ needs.variables.outputs.CM_URL }}
+#      - name: Run UI Tests
+#        if: ${{ needs.variables.outputs.ENVIRONMENT == 'uat'}}
+#        run: dotnet test --configuration ${{ env.Configuration }} demo/src/Foundation.SystemTests/Foundation.SystemTests.csproj
+#        env:
+#          Credentials:MerchantId: ${{ secrets.MERCHANT_ID }}
+#          Credentials:Secret: ${{ secrets.MERCHANT_SECRET }}
+#          FoundationCommerce: ${{ needs.variables.outputs.SITE_URL }}
+#          ManagerCommerce: ${{ needs.variables.outputs.CM_URL }}
   
   deploy:
     if: ${{ github.event_name == 'release' }}
