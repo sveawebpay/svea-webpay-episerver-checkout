@@ -239,12 +239,22 @@ jobs:
           
           
       - name: Run UI Tests
-        if: ${{ needs.variables.outputs.ENVIRONMENT == 'dev'}}
+        if: ${{ needs.variables.outputs.ENVIRONMENT == 'uat'}}
         run: dotnet test --configuration ${{ env.Configuration }} demo/src/Foundation.SystemTests/Foundation.SystemTests.csproj
         env:
           Credentials:MerchantId: ${{ secrets.MERCHANT_ID }}
           Credentials:Secret: ${{ secrets.MERCHANT_SECRET }}
           FoundationCommerce: ${{ needs.variables.outputs.SITE_URL }}
           ManagerCommerce: ${{ needs.variables.outputs.CM_URL }}
-        
+  
+  deploy:
+    if: ${{ github.event_name == 'release' }}
+    name: Deploy to nuget
+    needs: [variables, build-plugin, build-demo-site]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download All artifacts
+        uses: actions/download-artifact@v2   
     
+      - name: Publish to nuget
+        run: dotnet nuget push packages/*.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }} --skip-duplicate
