@@ -22,33 +22,28 @@ using OrderRow = Svea.WebPay.SDK.CheckoutApi.OrderRow;
 namespace Svea.WebPay.Episerver.Checkout.Common
 {
     [ServiceConfiguration(typeof(IRequestFactory))]
-    public class RequestFactory : IRequestFactory
+    public class DefaultRequestFactory : IRequestFactory
     {
         private readonly ICheckoutConfigurationLoader _checkoutConfigurationLoader;
         private readonly IOrderGroupCalculator _orderGroupCalculator;
         private readonly IShippingCalculator _shippingCalculator;
-        private readonly SveaWebPayTaxCalculator _sveaWebPayTaxCalculator;
+        
         private readonly IReturnLineItemCalculator _returnLineItemCalculator;
-        private readonly ITaxCalculator _taxCalculator;
-
-        public RequestFactory(
+        
+        public DefaultRequestFactory(
             ICheckoutConfigurationLoader checkoutConfigurationLoader,
             IOrderGroupCalculator orderGroupCalculator,
             IShippingCalculator shippingCalculator,
-            SveaWebPayTaxCalculator sveaWebPayTaxCalculator, 
-            IReturnLineItemCalculator returnLineItemCalculator,
-            ITaxCalculator taxCalculator)
+            IReturnLineItemCalculator returnLineItemCalculator)
         {
             _checkoutConfigurationLoader = checkoutConfigurationLoader ??
                                            throw new ArgumentNullException(nameof(checkoutConfigurationLoader));
             _orderGroupCalculator = orderGroupCalculator;
             _shippingCalculator = shippingCalculator;
-            _sveaWebPayTaxCalculator = sveaWebPayTaxCalculator;
             _returnLineItemCalculator = returnLineItemCalculator;
-            _taxCalculator = taxCalculator;
         }
 
-        public CreateOrderModel GetOrderRequest(IOrderGroup orderGroup, IMarket market, PaymentMethodDto paymentMethodDto, CultureInfo currentLanguage)
+        public virtual CreateOrderModel GetOrderRequest(IOrderGroup orderGroup, IMarket market, PaymentMethodDto paymentMethodDto, CultureInfo currentLanguage)
         {
             if (orderGroup == null)
             {
@@ -80,7 +75,7 @@ namespace Svea.WebPay.Episerver.Checkout.Common
                 new SDK.CheckoutApi.Cart(orderRows));
         }
 
-        public UpdateOrderModel GetUpdateOrderRequest(IOrderGroup orderGroup, IMarket market, PaymentMethodDto paymentMethodDto,
+        public virtual UpdateOrderModel GetUpdateOrderRequest(IOrderGroup orderGroup, IMarket market, PaymentMethodDto paymentMethodDto,
             CultureInfo currentLanguage, string merchantData = null)
         {
             if (orderGroup == null)
@@ -152,15 +147,15 @@ namespace Svea.WebPay.Episerver.Checkout.Common
             return new CancelRequest(true);
         }
 
-        private IEnumerable<OrderRow> GetOrderRowItems(IMarket market, Currency currency, IOrderAddress shippingAddress, IEnumerable<ILineItem> lineItems)
+        public virtual IEnumerable<OrderRow> GetOrderRowItems(IMarket market, Currency currency, IOrderAddress shippingAddress, IEnumerable<ILineItem> lineItems)
         {
             return lineItems.Select(item =>
             {
                 var extendedPrice = item.ReturnQuantity > 0 ? _returnLineItemCalculator.GetExtendedPrice(item as IReturnLineItem, currency) : item.GetExtendedPrice(currency);
-               
+
                 var itemSalesTex = item.GetSalesTax(market, currency, shippingAddress);
                 var vatPercent = extendedPrice.Amount > 0
-                    ? market.PricesIncludeTax 
+                    ? market.PricesIncludeTax
                         ? itemSalesTex.Amount / (extendedPrice.Amount - itemSalesTex.Amount)
                         : itemSalesTex.Amount / extendedPrice.Amount
                     : 0;
@@ -174,7 +169,7 @@ namespace Svea.WebPay.Episerver.Checkout.Common
             });
         }
 
-        private OrderRow GetShippingOrderItem(IOrderGroup orderGroup, IShipment shipment, IMarket market)
+        public virtual OrderRow GetShippingOrderItem(IOrderGroup orderGroup, IShipment shipment, IMarket market)
         {
             var currency = shipment.ParentOrderGroup.Currency;
             var extendPrice = _orderGroupCalculator.GetShippingSubTotal(orderGroup);
@@ -182,21 +177,20 @@ namespace Svea.WebPay.Episerver.Checkout.Common
 
             var shippingTax = _shippingCalculator.GetShippingTax(shipment, market, currency);
             var vatPercent = discountedShippingAmount > 0
-                ? market.PricesIncludeTax 
+                ? market.PricesIncludeTax
                     ? shippingTax.Amount / (discountedShippingAmount - shippingTax.Amount)
                     : shippingTax.Amount / discountedShippingAmount
                 : 0;
-            
+
             var unitShippingTax = extendPrice * vatPercent;
             var unitPrice = market.PricesIncludeTax ? extendPrice : extendPrice + unitShippingTax;
-            var discountPercent = (extendPrice.Amount - discountedShippingAmount.Amount) / extendPrice.Amount;
+            var discountPercent = extendPrice.Amount > 0 ? (extendPrice.Amount - discountedShippingAmount.Amount) / extendPrice.Amount : 0;
 
             var shippingMethodInfoModel = ShippingManager.GetShippingMethod(shipment.ShippingMethodId).ShippingMethod.Single();
             return new OrderRow("SHIPPING", shippingMethodInfoModel.DisplayName, MinorUnit.FromInt(1), MinorUnit.FromDecimal(unitPrice.Amount),
                 MinorUnit.FromDecimal(discountPercent * 100), MinorUnit.FromDecimal(vatPercent * 100),
                 "PCS", null, 999, null);
         }
-
 
         private MerchantSettings GetMerchantSettings(CheckoutConfiguration checkoutConfiguration, IOrderGroup orderGroup, string payeeReference)
         {
