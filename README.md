@@ -1,21 +1,26 @@
 # Svea.WebPay.Episerver.Checkout
 
 
-## About
+## Links
+[Test-Data](https://www.svea.com/globalassets/sweden/foretag/betallosningar/e-handel/integrationspaket-logos-and-doc.-integration-test-instructions-webpay/test-instructions-webpay-partners-.pdf), In the documentation it says checkoutID, it's the same as later called MerchantId.  
+[Svea Payment Admin](https://paymentadminstage.svea.com/)  
+[Svea SDK](https://github.com/sveawebpay/svea-sdk-dotnet)
 
 
 # The installation assumes that you have Foundation installed
-[Foundation](https://github.com/episerver/Foundation)
+[Foundation](https://github.com/episerver/Foundation)  
+Read [FoundationReadMe](https://github.com/sveawebpay/svea-webpay-episerver-checkout/blob/develop/FoundationReadMe.md) to fix code and web.config issues with Foundation.
 
 # OBS ngrok for callbacks https://ngrok.com/
+Callbacks from Svea is used both to validate order and when a purchase is completed. So to be able to develop and test, ngrok needs to be used.
 
 # How to get started
 ## Install following NuGet packages
-For CMS:
+For project Foundation and Foundation.Commerce:
 ```
 Install-Package Svea.WebPay.Episerver.Checkout 
 ```
-For Commerce:
+For project Foundation.CommerceManager:
 
 ```
 Install-Package Svea.WebPay.Episerver.Checkout.CommerceManager
@@ -470,3 +475,6 @@ Add view Foundation\\Features\\MyAccount\\OrderConfirmation\\_SveaWebPayCheckout
 	</p>
 </div>
 ```
+
+# Misc
+A common issue when setting up Svea Checkout is that the thank you page isn't displayed after a completed purchase. That's because the Index action in `Foundation.Features.MyAccount.OrderConfirmation.OrderConfirmationController` expects an orderNumber, and the order is created first on callback. Therefore, you will be redirected to the start page and the cart disappears on the callback. This logic is part of the Foundation and needs to be adjusted to suite your needs.
