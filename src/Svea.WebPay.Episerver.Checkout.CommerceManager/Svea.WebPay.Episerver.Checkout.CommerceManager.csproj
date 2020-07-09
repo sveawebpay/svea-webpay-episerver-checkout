@@ -9,7 +9,7 @@
     <PackageTags>Svea Checkout EPiServerModulePackage ThirdPartyAddOn PaymentProvider Episerver Commerce</PackageTags>
     <PackageIcon>icon.png</PackageIcon>
     <RepositoryType>git</RepositoryType>
-    <PackageReleaseNotes>Checkout handling.</PackageReleaseNotes>
+    <PackageReleaseNotes>Updated dependency to Svea SDK</PackageReleaseNotes>
     <AssemblyName>Svea.WebPay.Episerver.Checkout.CommerceManager</AssemblyName>
     <RootNamespace>Svea.WebPay.Episerver.Checkout.CommerceManager</RootNamespace>
   </PropertyGroup>
@@ -24,7 +24,7 @@
 
   <ItemGroup>
     <PackageReference Include="EPiServer.Commerce.Core" Version="13.7.1" />
-    <PackageReference Include="Svea.WebPay.SDK" Version="0.1.0" />
+    <PackageReference Include="Svea.WebPay.SDK" Version="0.1.1" />
   </ItemGroup>
 
   <ItemGroup>
