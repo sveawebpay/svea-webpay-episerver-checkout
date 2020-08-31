@@ -24,7 +24,7 @@
 
   <ItemGroup>
     <PackageReference Include="EPiServer.Commerce.Core" Version="13.7.1" />
-    <PackageReference Include="Svea.WebPay.SDK" Version="0.1.1" />
+    <PackageReference Include="Svea.WebPay.SDK" Version="0.2.1" />
   </ItemGroup>
 
   <ItemGroup>
