@@ -1460,7 +1460,10 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Startup.cs" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="modules\_protected\EPiServer.Labs.LanguageManager\Translation\" />
+    <Folder Include="modules\_protected\EPiServer\EPiServer.Labs.LanguageManager\Translation\" />
+  </ItemGroup>
   <ItemGroup>
     <Content Include="App_Data\customers.xml" />
     <Content Include="App_Data\markets.xml" />
@@ -1629,6 +1632,8 @@
     <Content Include="Features\Markets\market.js" />
     <Content Include="modules\_protected\Episerver.Marketing.Connector\ClientResources\Profile\Profile.js" />
     <Content Include="modules\_protected\Episerver.Marketing.Connector\Views\Admin\Settings.aspx" />
+    <Content Include="modules\_protected\EPiServer.Marketing.Testing\abcapture\capture.js" />
+    <Content Include="modules\_protected\EPiServer.Marketing.Testing\abcapture\phantomjs.exe" />
     <Content Include="modules\_protected\Foundation.Cms\ClientResources\img\episerver.png" />
     <Content Include="modules\_protected\Foundation.Cms\ClientResources\js\vendors\axios.min.js" />
     <Content Include="modules\_protected\Foundation.Cms\ClientResources\js\vendors\jquery-3.4.0.min.js" />
@@ -2291,6 +2296,8 @@
     <Content Include="modules\_protected\BVNetwork.404Handler\web.config" />
     <Content Include="modules\_protected\BVNetwork.404Handler\BVNetwork.404Handler.zip" />
     <Content Include="Features\Checkout\_SveaWebPayCheckoutPaymentMethod.cshtml" />
+    <Content Include="modules\_protected\episerver-labs-grid-view\episerver-labs-grid-view.zip" />
+    <Content Include="modules\_protected\episerver-labs-content-manager\episerver-labs-content-manager.zip" />
     <None Include="packages.config">
       <SubType>Designer</SubType>
     </None>
