@@ -45,7 +45,7 @@ jobs:
  
     - name: Use GitVersion
       id: gitversion # step id used as reference for output values
-      uses: gittools/actions/gitversion/execute@v0.9.3
+      uses: gittools/actions/gitversion/execute@v0.9.6
 
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v1
@@ -93,8 +93,10 @@ jobs:
           GITHUB_CONTEXT: ${{ toJson(github) }}
         run: echo "$GITHUB_CONTEXT"
 
+
+
       - name: Set dev environment variables
-        uses: allenevans/set-env@v1.1.0
+        uses: allenevans/set-env@v2.0.0
         if: ${{ startsWith(github.ref, 'refs/heads/develop') || github.base_ref == 'develop' }} 
         with: 
           ENVIRONMENT: dev
@@ -104,7 +106,7 @@ jobs:
           CM_URL: https://mgrsveaepiserver001dev.azurewebsites.net/
           
       - name: Set uat environment variables
-        uses: allenevans/set-env@v1.1.0
+        uses: allenevans/set-env@v2.0.0
         if: ${{ startsWith(github.ref, 'refs/heads/release/') || startsWith(github.ref, 'refs/heads/hotfix/') || contains(github.ref, '-beta')}} 
         with: 
           ENVIRONMENT: uat
@@ -114,7 +116,7 @@ jobs:
           CM_URL: https://mgrsveaepiserver001uat.azurewebsites.net/
           
       - name: Set pro environment variables
-        uses: allenevans/set-env@v1.1.0
+        uses: allenevans/set-env@v2.0.0
         if: ${{ startsWith(github.ref, 'refs/tags/') && !contains(github.ref, 'refs/tags/*-*') }} 
         with: 
           ENVIRONMENT: pro
