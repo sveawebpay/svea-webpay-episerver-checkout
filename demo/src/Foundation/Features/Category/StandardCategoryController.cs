@@ -2,11 +2,8 @@
 using EPiServer.Core;
 using EPiServer.Core.Html;
 using EPiServer.Web.Mvc;
-using Foundation.Cms.Categories;
-using Foundation.Cms.Pages;
-using Foundation.Cms.ViewModels.Categories;
-using Foundation.Find.Cms;
-using Foundation.Find.Cms.ViewModels;
+using Foundation.Features.Search;
+using Foundation.Features.Shared;
 using Geta.EpiCategories;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,10 +15,10 @@ namespace Foundation.Features.Category
 {
     public class StandardCategoryController : ContentController<StandardCategory>
     {
-        private readonly ICmsSearchService _searchService;
+        private readonly ISearchService _searchService;
         private readonly IContentLoader _contentLoader;
 
-        public StandardCategoryController(ICmsSearchService searchService, IContentLoader contentLoader)
+        public StandardCategoryController(ISearchService searchService, IContentLoader contentLoader)
         {
             _searchService = searchService;
             _contentLoader = contentLoader;
@@ -31,8 +28,10 @@ namespace Foundation.Features.Category
         {
             var categories = new List<ContentReference> { currentContent.ContentLink };
             pagination.Categories = categories;
-            var model = new CategorySearchViewModel(currentContent);
-            model.SearchResults = _searchService.SearchByCategory(pagination);
+            var model = new CategorySearchViewModel(currentContent)
+            {
+                SearchResults = _searchService.SearchByCategory(pagination)
+            };
             return View(model);
         }
 
@@ -40,16 +39,20 @@ namespace Foundation.Features.Category
         {
             var categories = new List<ContentReference> { currentContent.ContentLink };
             pagination.Categories = categories;
-            var model = new CategorySearchViewModel(currentContent);
-            model.SearchResults = _searchService.SearchByCategory(pagination);
+            var model = new CategorySearchViewModel(currentContent)
+            {
+                SearchResults = _searchService.SearchByCategory(pagination)
+            };
             return PartialView("_PageListing", model);
         }
 
         public ActionResult Preview(FoundationPageData pageData)
         {
-            var model = new CategoryFoundationPageViewModel(pageData);
-            model.PreviewText = GetPreviewText(pageData);
-            model.Categories = pageData.Categories.Select(x => _contentLoader.Get<CategoryData>(x) as StandardCategory);
+            var model = new CategoryFoundationPageViewModel(pageData)
+            {
+                PreviewText = GetPreviewText(pageData),
+                Categories = pageData.Categories.Select(x => _contentLoader.Get<CategoryData>(x) as StandardCategory)
+            };
             return PartialView("_Preview", model);
         }
 

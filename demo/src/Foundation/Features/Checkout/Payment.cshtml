@@ -1,7 +1,11 @@
-﻿@model CheckoutViewModel
+﻿@using Foundation.Features.Checkout.ViewModels
+
+@model CheckoutViewModel
+
 @{
     Layout = null;
 }
+
 <div class="row">
     <div class="col-12">
         @foreach (var method in Model.PaymentMethodViewModels)
@@ -9,8 +13,8 @@
             <label class="checkbox">
                 @method.FriendlyName
                 @{ string checkState = method.SystemKeyword == Model.Payment.SystemKeyword ? "checked" : string.Empty; }
-                <input type="radio" class="jsChangePayment" name="PaymentMethodType" methodid="@method.PaymentMethodId" keyword="@method.SystemKeyword" @checkState 
-                       url="@Url.Action("UpdatePaymentOption")"/>
+                <input type="radio" class="jsChangePayment" name="PaymentMethodType" methodid="@method.PaymentMethodId" keyword="@method.SystemKeyword" @checkState
+                       url="@Url.Action("UpdatePaymentOption")" />
                 <span class="checkmark"></span>
             </label>
         }
@@ -19,7 +23,7 @@
 </div>
 <hr />
 <div class="row">
-    <div class="col-12" style="position: relative;">
+    <div class="col-12 position-relative">
         <div class="loading-box loading-in-modal" style="display: none">
             <div class="loader"></div>
         </div>

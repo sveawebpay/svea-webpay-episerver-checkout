@@ -3,9 +3,7 @@ using EPiServer.Web.Mvc;
 using Foundation.Cms;
 using Foundation.Commerce;
 using Foundation.Commerce.Customer.Services;
-using Foundation.Commerce.Customer.ViewModels;
-using Foundation.Commerce.Models.Pages;
-using Foundation.Commerce.Order.ViewModels;
+using Foundation.Features.MyOrganization.Organization;
 using Mediachase.Commerce;
 using Mediachase.Commerce.Customers;
 using System;
@@ -479,6 +477,5 @@ namespace Foundation.Features.MyOrganization.Budgeting
 
             return Json(new { result });
         }
-
     }
 }

@@ -3,7 +3,7 @@ using EPiServer.Commerce.Marketing;
 using EPiServer.Core;
 using EPiServer.Globalization;
 using EPiServer.Shell.Navigation;
-using Foundation.Cms.ViewModels;
+using Foundation.Cms;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,7 +23,7 @@ namespace Foundation.Commerce.Marketing
             _couponService = couponService;
         }
 
-        [MenuItem("/global/foundation/coupons", TextResourceKey = "/Shared/Coupons", SortIndex = 100)]
+        [MenuItem("/global/foundation/coupons", TextResourceKey = "/Shared/Coupons", SortIndex = 200)]
         [HttpGet]
         public ActionResult Index()
         {
@@ -72,9 +72,9 @@ namespace Foundation.Commerce.Marketing
         {
             if (actionType.Equals("update", StringComparison.Ordinal))
             {
-                bool updated = false;
+                var updated = false;
                 var coupon = _couponService.GetById(model.Id);
-               
+
                 if (coupon != null)
                 {
                     coupon.Code = model.Code;
@@ -89,7 +89,7 @@ namespace Foundation.Commerce.Marketing
             }
             else
             {
-                bool deleted = _couponService.DeleteById(model.Id);
+                var deleted = _couponService.DeleteById(model.Id);
                 return deleted ? "delete_ok" : "delete_nok";
             }
         }

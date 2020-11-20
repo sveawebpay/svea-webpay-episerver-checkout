@@ -4,10 +4,9 @@ using EPiServer.Logging;
 using EPiServer.Web.Mvc;
 using Foundation.Commerce;
 using Foundation.Commerce.Customer.Services;
-using Foundation.Commerce.Customer.ViewModels;
-using Foundation.Commerce.Models.Pages;
-using Foundation.Commerce.Order.Services;
-using Foundation.Commerce.Order.ViewModels;
+using Foundation.Features.Checkout.Services;
+using Foundation.Features.MyAccount.AddressBook;
+using Foundation.Infrastructure;
 using Mediachase.Commerce.Orders;
 using System;
 using System.Collections.Generic;
@@ -59,7 +58,7 @@ namespace Foundation.Features.MyAccount.OrderDetails
         [ValidateAntiForgeryToken]
         public ActionResult CreateReturn(int orderGroupId, int shipmentId, int lineItemId, decimal returnQuantity, string reason)
         {
-            ReturnFormStatus formStatus = _ordersService.CreateReturn(orderGroupId, shipmentId, lineItemId, returnQuantity, reason);
+            var formStatus = _ordersService.CreateReturn(orderGroupId, shipmentId, lineItemId, returnQuantity, reason);
             return Json(new
             {
                 Result = true,
@@ -123,6 +122,24 @@ namespace Foundation.Features.MyAccount.OrderDetails
                 return orderViewModel;
             }
 
+            var currentContact = _customerService.GetCurrentContact();
+            var currentOrganization = currentContact.FoundationOrganization;
+            if (currentOrganization != null)
+            {
+                var usersOrganization = _customerService.GetContactsForOrganization(currentOrganization);
+                if (!usersOrganization.Where(x => x.ContactId == purchaseOrder.CustomerId).Any())
+                {
+                    return orderViewModel;
+                }
+            }
+            else
+            {
+                if (currentContact.ContactId != purchaseOrder.CustomerId)
+                {
+                    return orderViewModel;
+                }
+            }
+
             // Assume there is only one form per purchase.
             var form = purchaseOrder.GetFirstForm();
 
@@ -166,10 +183,8 @@ namespace Foundation.Features.MyAccount.OrderDetails
                     {
                         LogManager.GetLogger(GetType()).Error("Failed to update order status to Quote Expired.", ex.StackTrace);
                     }
-
                 }
             }
-
 
             if (!string.IsNullOrEmpty(purchaseOrder["QuoteStatus"]?.ToString()) &&
                 (purchaseOrder.Status == OrderStatus.InProgress.ToString() ||

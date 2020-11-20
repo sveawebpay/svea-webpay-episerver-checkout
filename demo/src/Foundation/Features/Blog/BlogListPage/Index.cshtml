@@ -1,4 +1,6 @@
 ﻿@using EPiServer.Web.Mvc.Html
+@using Foundation.Features.Blog.BlogListPage
+
 @model BlogListPageViewModel
 
 <div class="row blog">
@@ -27,6 +29,7 @@
         </div>
         <div id="blog-list">
             @Html.Partial("_BlogList", Model)
+            @Html.Partial("_Paging", Model)
         </div>
     </div>
 </div>

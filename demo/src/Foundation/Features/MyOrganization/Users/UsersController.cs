@@ -1,20 +1,22 @@
 ﻿using EPiServer;
 using EPiServer.Cms.UI.AspNetIdentity;
-using EPiServer.Core;
 using EPiServer.Framework.Localization;
 using EPiServer.Globalization;
 using EPiServer.Web.Mvc;
 using Foundation.Cms;
 using Foundation.Cms.Attributes;
+using Foundation.Cms.Extensions;
 using Foundation.Cms.Identity;
-using Foundation.Cms.Pages;
+using Foundation.Cms.Settings;
 using Foundation.Commerce;
 using Foundation.Commerce.Customer;
 using Foundation.Commerce.Customer.Services;
-using Foundation.Commerce.Customer.ViewModels;
-using Foundation.Commerce.Mail;
-using Foundation.Commerce.Models.Pages;
-using Foundation.Find.Commerce;
+using Foundation.Features.MyAccount.ResetPassword;
+using Foundation.Features.MyOrganization.Organization;
+using Foundation.Features.MyOrganization.SubOrganization;
+using Foundation.Features.Search;
+using Foundation.Features.Settings;
+using Foundation.Features.Shared;
 using Microsoft.AspNet.Identity;
 using Microsoft.AspNet.Identity.Owin;
 using System.Collections.Generic;
@@ -36,8 +38,9 @@ namespace Foundation.Features.MyOrganization.Users
         private readonly ApplicationUserManager<SiteUser> _userManager;
         private readonly ApplicationSignInManager<SiteUser> _signInManager;
         private readonly LocalizationService _localizationService;
-        private readonly ICommerceSearchService _searchService;
+        private readonly ISearchService _searchService;
         private readonly CookieService _cookieService;
+        private readonly ISettingsService _settingsService;
 
         public UsersController(
             ICustomerService customerService,
@@ -47,8 +50,9 @@ namespace Foundation.Features.MyOrganization.Users
             IContentLoader contentLoader,
             IMailService mailService,
             LocalizationService localizationService,
-            ICommerceSearchService searchService,
-            CookieService cookieService)
+            ISearchService searchService,
+            CookieService cookieService,
+            ISettingsService settingsService)
         {
             _customerService = customerService;
             _organizationService = organizationService;
@@ -59,6 +63,7 @@ namespace Foundation.Features.MyOrganization.Users
             _localizationService = localizationService;
             _searchService = searchService;
             _cookieService = cookieService;
+            _settingsService = settingsService;
         }
 
         [NavigationAuthorize("Admin")]
@@ -236,7 +241,9 @@ namespace Foundation.Features.MyOrganization.Users
             {
                 var adminUser = _userManager.FindByEmail(adminUsername);
                 if (adminUser != null)
+                {
                     _signInManager.SignIn(adminUser, false, false);
+                }
 
                 _cookieService.Remove(Constant.Cookies.B2BImpersonatingAdmin);
             }
@@ -262,9 +269,13 @@ namespace Foundation.Features.MyOrganization.Users
             var user = _userManager.FindByName(viewModel.Contact.Email);
             if (user != null)
             {
-                var startPage = _contentLoader.Get<CommerceHomePage>(ContentReference.StartPage);
-                var body = await _mailService.GetHtmlBodyForMail(startPage.ResetPasswordMail, new NameValueCollection(), ContentLanguage.PreferredCulture.TwoLetterISOLanguageName);
-                var mailPage = _contentLoader.Get<MailBasePage>(startPage.ResetPasswordMail);
+                var referencePages = _settingsService.GetSiteSettings<ReferencePageSettings>();
+                if (referencePages?.ResetPasswordMail.IsNullOrEmpty() ?? true)
+                {
+                    return;
+                }
+                var body = await _mailService.GetHtmlBodyForMail(referencePages.ResetPasswordMail, new NameValueCollection(), ContentLanguage.PreferredCulture.TwoLetterISOLanguageName);
+                var mailPage = _contentLoader.Get<MailBasePage>(referencePages.ResetPasswordMail);
                 var code = _userManager.GeneratePasswordResetToken(user.Id);
                 var url = Url.Action("ResetPassword", "ResetPassword", new { userId = user.Id, code = HttpUtility.UrlEncode(code), language = ContentLanguage.PreferredCulture.TwoLetterISOLanguageName }, Request.Url.Scheme);
 
@@ -277,6 +288,5 @@ namespace Foundation.Features.MyOrganization.Users
                 _mailService.Send(mailPage.Subject, body, user.Email);
             }
         }
-
     }
 }

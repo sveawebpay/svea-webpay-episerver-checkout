@@ -4,12 +4,11 @@ using EPiServer.Core;
 using EPiServer.Framework.Localization;
 using Foundation.Cms.Attributes;
 using Foundation.Cms.Identity;
-using Foundation.Cms.Pages;
-using Foundation.Cms.ViewModels;
-using Foundation.Cms.ViewModels.Pages;
+using Foundation.Cms.Settings;
 using Foundation.Commerce.Customer.Services;
-using Foundation.Commerce.Mail;
-using Foundation.Commerce.Models.Pages;
+using Foundation.Features.Home;
+using Foundation.Features.Settings;
+using Foundation.Features.Shared;
 using System.Threading.Tasks;
 using System.Web;
 using System.Web.Mvc;
@@ -21,19 +20,22 @@ namespace Foundation.Features.MyAccount.ResetPassword
         private readonly IContentLoader _contentLoader;
         private readonly IMailService _mailService;
         private readonly LocalizationService _localizationService;
+        private readonly ISettingsService _settingsService;
 
         public ResetPasswordController(ApplicationSignInManager<SiteUser> signinManager,
             ApplicationUserManager<SiteUser> userManager,
             ICustomerService customerService,
             IContentLoader contentLoader,
             IMailService mailService,
-            LocalizationService localizationService)
+            LocalizationService localizationService,
+            ISettingsService settingsService)
 
             : base(signinManager, userManager, customerService)
         {
             _contentLoader = contentLoader;
             _mailService = mailService;
             _localizationService = localizationService;
+            _settingsService = settingsService;
         }
 
         [AllowAnonymous]
@@ -60,9 +62,9 @@ namespace Foundation.Features.MyAccount.ResetPassword
                 return RedirectToAction("ForgotPasswordConfirmation");
             }
 
-            var startPage = _contentLoader.Get<CommerceHomePage>(ContentReference.StartPage);
+            var referencePages = _settingsService.GetSiteSettings<ReferencePageSettings>();
             //var body = _mailService.GetHtmlBodyForMail(startPage.ResetPasswordMail, new NameValueCollection(), language);
-            var mailPage = _contentLoader.Get<MailBasePage>(startPage.ResetPasswordMail);
+            var mailPage = _contentLoader.Get<MailBasePage>(referencePages.ResetPasswordMail);
             var body = mailPage.MainBody.ToHtmlString();
             var code = await UserManager.GeneratePasswordResetTokenAsync(user.Id);
             var url = Url.Action("ResetPassword", "ResetPassword", new { userId = user.Id, code = HttpUtility.UrlEncode(code), language }, Request.Url.Scheme);
@@ -79,7 +81,7 @@ namespace Foundation.Features.MyAccount.ResetPassword
         [AllowAnonymous]
         public ActionResult ForgotPasswordConfirmation()
         {
-            var homePage = _contentLoader.Get<PageData>(ContentReference.StartPage) as CommerceHomePage;
+            var homePage = _contentLoader.Get<PageData>(ContentReference.StartPage) as HomePage;
             var model = ContentViewModel.Create(homePage);
             return View("ForgotPasswordConfirmation", model);
         }
@@ -124,7 +126,7 @@ namespace Foundation.Features.MyAccount.ResetPassword
         [AllowAnonymous]
         public ActionResult ResetPasswordConfirmation()
         {
-            var homePage = _contentLoader.Get<PageData>(ContentReference.StartPage) as CommerceHomePage;
+            var homePage = _contentLoader.Get<PageData>(ContentReference.StartPage) as HomePage;
             var model = ContentViewModel.Create(homePage);
             return View("ResetPasswordConfirmation", model);
         }
