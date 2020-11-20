@@ -74,20 +74,25 @@ Following is an example of a PaymentMethod using Svea Checkout
 
 
 ```Csharp
+
 using EPiServer.Commerce.Order;
 using EPiServer.Framework.Localization;
 using EPiServer.ServiceLocation;
+
 using Foundation.Commerce.Markets;
-using Foundation.Commerce.Order.Services;
+using Foundation.Features.Checkout.Services;
+
 using Mediachase.Commerce;
 using Mediachase.Commerce.Markets;
 using Mediachase.Commerce.Orders;
+
 using Svea.WebPay.Episerver.Checkout;
 using Svea.WebPay.Episerver.Checkout.Common;
+
 using System;
 using System.ComponentModel;
 
-namespace Foundation.Commerce.Order.Payments
+namespace Foundation.Features.Checkout.Payments
 {
     [ServiceConfiguration(typeof(IPaymentMethod))]
     public class SveaWebPayCheckoutPaymentOption : PaymentOptionBase, IDataErrorInfo
@@ -99,7 +104,7 @@ namespace Foundation.Commerce.Order.Payments
         private readonly IOrderGroupFactory _orderGroupFactory;
         private readonly IOrderRepository _orderRepository;
         private readonly ISveaWebPayCheckoutService _sveaWebPayCheckoutService;
-        
+
         private bool _isInitalized;
 
         public SveaWebPayCheckoutPaymentOption() : this(
@@ -171,7 +176,7 @@ namespace Foundation.Commerce.Order.Payments
             }
 
             var cart = _cartService.LoadCart(cartName, true)?.Cart;
-            if(cart != null)
+            if (cart != null)
             {
                 var market = _marketService.GetMarket(cart.MarketId);
 
@@ -205,9 +210,10 @@ namespace Foundation.Commerce.Order.Payments
     }
 }
 
+
 ```
 
-Add following method for creating Purchase Order in e.g. Foundation.Commerce/Order/Services/CheckoutService.cs To be able to use this code you need to constructor inject ICartService.
+Add following method for creating Purchase Order in e.g. Foundation/Features/Checkout/Services/CheckoutService.cs To be able to use this code you need to constructor inject ICartService.
 
 
 
@@ -300,7 +306,7 @@ public IPurchaseOrder CreatePurchaseOrderForSveaWebPay(long sveaWebPayOrderId, D
         }
 ```
 
-To initialize Svea checkout when loading the GUI, update GetPaymentMethodViewModels methods in Foundation.Commerce/Order/ViewModelFactories/PaymentMethodViewModelFactory.cs
+To initialize Svea checkout when loading the GUI, update GetPaymentMethodViewModels methods in Foundation/Features/Checkout/ViewModels/PaymentMethodViewModelFactory.cs
 ```CSharp
 
         public IEnumerable<PaymentMethodViewModel> GetPaymentMethodViewModels()
@@ -331,20 +337,24 @@ To initialize Svea checkout when loading the GUI, update GetPaymentMethodViewMod
 ```
 
 ## Endpoints
-Add a controller for callbacks, e.g Founcation.Commerce/Order/SveaWebPayCheckoutController.cs
+Add a controller for callbacks, e.g Foundation/Features/Checkout/SveaWebPayCheckoutController.cs
 ```Csharp
+
 using EPiServer.Commerce.Order;
 using EPiServer.Logging;
-using Foundation.Commerce.Order.Services;
+
+using Foundation.Features.Checkout.Services;
+
 using Svea.WebPay.Episerver.Checkout;
 using Svea.WebPay.Episerver.Checkout.Common;
 using Svea.WebPay.SDK.CheckoutApi;
+
 using System.Linq;
 using System.Net;
 using System.Web.Http;
 using System.Web.Http.Results;
 
-namespace Foundation.Commerce.Order
+namespace Foundation.Features.Checkout
 {
     [RoutePrefix("api/sveawebpay")]
     public class SveaWebPayCheckoutController : ApiController
@@ -352,8 +362,8 @@ namespace Foundation.Commerce.Order
         private readonly ICartService _cartService;
         private readonly CheckoutService _checkoutService;
         private readonly IOrderRepository _orderRepository;
-		private static readonly ILogger _log = LogManager.GetLogger(typeof(SveaWebPayCheckoutController));
-        
+        private static readonly ILogger _log = LogManager.GetLogger(typeof(SveaWebPayCheckoutController));
+
         private readonly ISveaWebPayCheckoutService _sveaWebPayCheckoutService;
 
         public SveaWebPayCheckoutController(
@@ -367,14 +377,14 @@ namespace Foundation.Commerce.Order
             _orderRepository = orderRepository;
             _sveaWebPayCheckoutService = sveaWebPayCheckoutService;
         }
-	
+
         [HttpGet]
         [Route("validation/{orderGroupId}/{orderId?}")]
         public IHttpActionResult Validation(int orderGroupId, long? orderId)
         {
             var cart = _orderRepository.Load<ICart>(orderGroupId);
-	    
-	    if (orderId != null)
+
+            if (orderId != null)
             {
                 // GET Request may contain an orderId
             }
@@ -444,13 +454,15 @@ namespace Foundation.Commerce.Order
         }
     }
 }
+
+
 ```
 
 # Frontend
 Add view Foundation\\Features\\Checkout\\_SveaWebPayCheckoutPaymentMethod.cshtml
 
 ```html
-@model  Foundation.Commerce.Order.Payments.SveaWebPayCheckoutPaymentOption
+@model Foundation.Features.Checkout.Payments.SveaWebPayCheckoutPaymentOption
 
 @Html.HiddenFor(model => model.PaymentMethodId)
 

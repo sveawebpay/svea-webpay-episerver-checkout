@@ -1,8 +1,10 @@
-﻿@model CheckoutViewModel
+﻿@using Foundation.Features.Checkout.ViewModels
+@using Foundation.Features.CatalogContent.Variation
+
+@model CheckoutViewModel
 
 <div class="row">
     <div class="col-12">
-
         @for (var shipmentIndex = 1; shipmentIndex <= Model.Shipments.Count(); shipmentIndex++)
         {
             <div class="card items border-radius-none jsShipmentRow">
@@ -21,7 +23,6 @@
                                     </div>
                                 </div>
                             </div>
-
                             <div class="row">
                                 <div class="col-12">
                                     @foreach (var cartItem in Model.Shipments[shipmentIndex - 1].CartItems)
@@ -41,7 +42,6 @@
                                                     <h5 class="items__item">
                                                         <a href="@cartItem.Url">@cartItem.DisplayName</a>
                                                     </h5>
-
                                                     @if (variant != null)
                                                     {
                                                         <p class="items__item-meta">
@@ -64,13 +64,13 @@
                                                         <span class="items__quantity">
                                                             Quantity
                                                         </span>
-                                                        <input type="number" class="textbox jsChangeQuantityItemCheckout" style="width: auto" name="@cartItem.Entry.Code"
+                                                        <input type="number" class="textbox jsChangeQuantityItemCheckout w-auto" name="@cartItem.Entry.Code"
                                                                value="@((int)cartItem.Quantity)"
                                                                data-code="@cartItem.Entry.Code"
                                                                data-url="@Url.Action("ChangeCartItem", "Checkout")"
                                                                data-shipmentId="@Model.Shipments[shipmentIndex - 1].ShipmentId" />
                                                     </div>
-                                                    @*<br />
+                                                    <br />
                                                     <div class="@(cartItem.Quantity > 1 || Model.Shipments[shipmentIndex - 1].CartItems.Count > 1 ? "" : "hidden" )">
                                                         <button type="button" class="button-white jsSeparateHint 
                                                                 @(cartItem.Quantity > 1 || Model.Shipments[shipmentIndex - 1].CartItems.Count > 1 ? "jsSeparateBtn" : "")"
@@ -83,7 +83,7 @@
                                                             <i class="fas fa-cut"></i>
                                                             <span> @Html.TranslateFallback("Ship to different address", "Ship to different address")</span>
                                                         </button>
-                                                    </div>*@
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -111,16 +111,15 @@
                     </div>
 
                     <!--Shipment Address-->
-                    @*<br />
+                    <br />
                     @{ 
                         var shipmentIndexViewData = new ViewDataDictionary();
                         shipmentIndexViewData.Add(new KeyValuePair<string, object>("ShipmentIndex", shipmentIndex - 1));
                     }
-                    @Html.Partial("SingleAddress", Model, shipmentIndexViewData)*@
+                    @Html.Partial("SingleAddress", Model, shipmentIndexViewData)
                 </div>
             </div>
             <br />
         }
-
     </div>
 </div>

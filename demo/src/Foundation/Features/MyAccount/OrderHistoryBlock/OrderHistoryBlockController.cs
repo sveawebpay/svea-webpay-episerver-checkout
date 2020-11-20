@@ -1,17 +1,17 @@
-﻿using EPiServer;
-using EPiServer.Commerce.Order;
+﻿using EPiServer.Commerce.Order;
 using EPiServer.Core;
 using EPiServer.Framework.DataAnnotations;
 using EPiServer.Logging;
 using EPiServer.Security;
 using EPiServer.Web.Mvc;
 using EPiServer.Web.Routing;
+using Foundation.Cms.Settings;
 using Foundation.Commerce;
 using Foundation.Commerce.Customer.Services;
-using Foundation.Commerce.Customer.ViewModels;
-using Foundation.Commerce.Models.Blocks;
-using Foundation.Commerce.Models.Pages;
-using Foundation.Commerce.Order.ViewModels;
+using Foundation.Features.Checkout.ViewModels;
+using Foundation.Features.MyAccount.AddressBook;
+using Foundation.Features.MyAccount.OrderHistory;
+using Foundation.Features.Settings;
 using Mediachase.Commerce.Orders;
 using Mediachase.Commerce.Security;
 using System;
@@ -23,22 +23,22 @@ namespace Foundation.Features.MyAccount.OrdersBlock
 {
     [Authorize]
     [TemplateDescriptor(Default = true)]
-    public class OrderHistoryBlockController : BlockController<OrderHistoryBlock>
+    public class OrderHistoryBlockController : BlockController<OrderHistoryBlock.OrderHistoryBlock>
     {
         private readonly IAddressBookService _addressBookService;
         private readonly IOrderRepository _orderRepository;
-        private readonly IContentLoader _contentLoader;
+        private readonly ISettingsService _settingsService;
         private readonly ICustomerService _customerService;
 
-        public OrderHistoryBlockController(IAddressBookService addressBookService, IOrderRepository orderRepository, IContentLoader contentLoader, ICustomerService customerService)
+        public OrderHistoryBlockController(IAddressBookService addressBookService, IOrderRepository orderRepository, ISettingsService settingsService, ICustomerService customerService)
         {
             _addressBookService = addressBookService;
             _orderRepository = orderRepository;
-            _contentLoader = contentLoader;
+            _settingsService = settingsService;
             _customerService = customerService;
         }
 
-        public override ActionResult Index(OrderHistoryBlock currentBlock)
+        public override ActionResult Index(OrderHistoryBlock.OrderHistoryBlock currentBlock)
         {
             var purchaseOrders = OrderContext.Current.LoadByCustomerId<PurchaseOrder>(PrincipalInfo.CurrentPrincipal.GetContactId())
                                              .OrderByDescending(x => x.Created)
@@ -93,7 +93,6 @@ namespace Foundation.Features.MyAccount.OrdersBlock
                         {
                             LogManager.GetLogger(GetType()).Error("Failed to update order status to Quote Expired.", ex.StackTrace);
                         }
-
                     }
                 }
 
@@ -101,7 +100,7 @@ namespace Foundation.Features.MyAccount.OrdersBlock
             }
 
             viewModel.OrderDetailsPageUrl =
-                UrlResolver.Current.GetUrl(_contentLoader.Get<CommerceHomePage>(ContentReference.StartPage).OrderDetailsPage);
+                UrlResolver.Current.GetUrl(_settingsService.GetSiteSettings<ReferencePageSettings>()?.OrderDetailsPage ?? ContentReference.StartPage);
 
             return PartialView(viewModel);
         }

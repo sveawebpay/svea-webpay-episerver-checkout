@@ -7,7 +7,7 @@ In Foundation.Commerce.Extensions.EntryContentBaseExtensions.cs add following in
 private static readonly Lazy<ICurrencyService> CurrencyService =
             new Lazy<ICurrencyService>(() => ServiceLocator.Current.GetInstance<CurrencyService>());
 ```
-And in method `Price` in the same file, when creating PriceFilter, change to following
+And in method `Prices` in the same file, when creating PriceFilter, change to following
 ```CSharp
 
             var priceFilter = new PriceFilter
@@ -16,7 +16,6 @@ And in method `Price` in the same file, when creating PriceFilter, change to fol
                 Currencies = new Currency[] { CurrencyService.Value.GetCurrentCurrency() }
             };
 ```
-
 
 ## Changes in web.config  
 To solve the error found in console:   
@@ -28,7 +27,7 @@ Update customHeaders with name `Content-Security-Policy` to allow fetching conte
     <httpProtocol>
       <customHeaders>
         <remove name="X-Powered-By" />
-        <add name=“Content-Security-Policy” value=“default-src ‘self’ https://checkoutapistage.svea.com/; script-src ‘self’ ‘unsafe-inline’ ‘unsafe-eval’ https://checkoutapistage.svea.com/ https://dc.services.visualstudio.com https://az416426.vo.msecnd.net/ https://code.jquery.com https://maxcdn.bootstrapcdn.com https://www.facebook.com https://dl.episerver.net; style-src ‘self’ https://fonts.googleapis.com ‘unsafe-inline’; font-src ‘self’ https://fonts.gstatic.com; img-src ‘self’ data:;” />
+       <add name="Content-Security-Policy" value="default-src 'self' https://checkoutapistage.svea.com/ ws: wss: data:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkoutapistage.svea.com/ https://dc.services.visualstudio.com https://az416426.vo.msecnd.net https://code.jquery.com https://maxcdn.bootstrapcdn.com *.facebook.com *.facebook.net *.episerver.net *.bing.com *.virtualearth.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com *.episerver.net *.bing.com; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' https://dc.services.visualstudio.com ws: wss: *.bing.com *.virtualearth.net; img-src 'self' data: http: https:; child-src 'self' https://checkoutapistage.svea.com/ *.powerbi.com *.vimeo.com *.youtube.com *.facebook.com;" />
         <add name="X-XSS-Protection" value="1; mode=block" />
         <add name="X-Content-Type-Options" value="nosniff " />
       </customHeaders>

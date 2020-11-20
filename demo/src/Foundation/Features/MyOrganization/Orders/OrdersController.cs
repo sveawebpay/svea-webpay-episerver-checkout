@@ -1,31 +1,32 @@
-﻿using EPiServer;
-using EPiServer.Core;
+﻿using EPiServer.Core;
 using EPiServer.Web.Mvc;
 using EPiServer.Web.Routing;
+using Foundation.Cms.Settings;
 using Foundation.Commerce.Customer.Services;
-using Foundation.Commerce.Models.Pages;
-using Foundation.Commerce.Order.Services;
-using Foundation.Commerce.Order.ViewModels;
+using Foundation.Features.Checkout.Services;
+using Foundation.Features.Settings;
 using System.Collections.Generic;
 using System.Web.Mvc;
 
 namespace Foundation.Features.MyOrganization.Orders
 {
     [Authorize]
-    public class OrdersController : PageController<Commerce.Models.Pages.OrdersPage>
+    public class OrdersController : PageController<OrdersPage>
     {
         private readonly ICustomerService _customerService;
         private readonly IOrdersService _ordersService;
-        private readonly IContentLoader _contentLoader;
+        private readonly ISettingsService _settingsService;
 
-        public OrdersController(ICustomerService customerService, IOrdersService ordersService, IContentLoader contentLoader)
+        public OrdersController(ICustomerService customerService,
+            IOrdersService ordersService,
+            ISettingsService settingsService)
         {
             _customerService = customerService;
             _ordersService = ordersService;
-            _contentLoader = contentLoader;
+            _settingsService = settingsService;
         }
 
-        public ActionResult Index(Commerce.Models.Pages.OrdersPage currentPage)
+        public ActionResult Index(OrdersPage currentPage)
         {
             var organizationUsersList = _customerService.GetContactsForOrganization();
             var viewModel = new OrdersPageViewModel
@@ -41,11 +42,11 @@ namespace Foundation.Features.MyOrganization.Orders
             viewModel.OrdersOrganization = ordersOrganization;
 
             viewModel.OrderDetailsPageUrl =
-                UrlResolver.Current.GetUrl(_contentLoader.Get<CommerceHomePage>(ContentReference.StartPage).OrderDetailsPage);
+                UrlResolver.Current.GetUrl(_settingsService.GetSiteSettings<ReferencePageSettings>()?.OrderDetailsPage ?? ContentReference.StartPage);
             return View(viewModel);
         }
 
-        public ActionResult QuickOrder(Commerce.Models.Pages.OrdersPage currentPage)
+        public ActionResult QuickOrder(OrdersPage currentPage)
         {
             var viewModel = new OrdersPageViewModel { CurrentContent = currentPage };
             return View(viewModel);

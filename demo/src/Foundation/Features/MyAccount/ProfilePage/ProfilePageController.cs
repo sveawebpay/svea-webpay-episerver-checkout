@@ -1,15 +1,16 @@
-﻿using EPiServer;
-using EPiServer.Cms.UI.AspNetIdentity;
+﻿using EPiServer.Cms.UI.AspNetIdentity;
 using EPiServer.Commerce.Order;
 using EPiServer.Core;
 using EPiServer.Security;
 using EPiServer.Web.Routing;
 using Foundation.Cms.Identity;
+using Foundation.Cms.Settings;
 using Foundation.Commerce.Customer.Services;
-using Foundation.Commerce.Customer.ViewModels;
-using Foundation.Commerce.Models.Pages;
-using Foundation.Commerce.Order.Services;
-using Foundation.Commerce.Order.ViewModels;
+using Foundation.Features.Checkout.Services;
+using Foundation.Features.Checkout.ViewModels;
+using Foundation.Features.MyAccount.AddressBook;
+using Foundation.Features.MyAccount.OrderHistory;
+using Foundation.Features.Settings;
 using Mediachase.Commerce.Security;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,45 +19,46 @@ using System.Web.Mvc;
 namespace Foundation.Features.MyAccount.ProfilePage
 {
     [Authorize]
-    public class ProfilePageController : IdentityControllerBase<Social.Models.Pages.ProfilePage>
+    public class ProfilePageController : IdentityControllerBase<ProfilePage>
     {
         private readonly IAddressBookService _addressBookService;
         private readonly IOrderRepository _orderRepository;
-        private readonly IContentLoader _contentLoader;
         private readonly ICartService _cartService;
+        private readonly ISettingsService _settingsService;
 
         public ProfilePageController(IAddressBookService addressBookService,
             IOrderRepository orderRepository,
             ApplicationSignInManager<SiteUser> signinManager,
             ApplicationUserManager<SiteUser> userManager,
             ICartService cartService,
-            IContentLoader contentLoader,
-            ICustomerService customerService) : base(signinManager, userManager, customerService)
+            ICustomerService customerService,
+            ISettingsService settingsService) : base(signinManager, userManager, customerService)
         {
             _addressBookService = addressBookService;
             _orderRepository = orderRepository;
-            _contentLoader = contentLoader;
             _cartService = cartService;
+            _settingsService = settingsService;
         }
 
-        public ActionResult Index(Social.Models.Pages.ProfilePage currentPage)
+        public ActionResult Index(ProfilePage currentPage)
         {
-            var viewModel = new SocialCommerceProfilePageViewModel(currentPage)
+            var viewModel = new ProfilePageViewModel(currentPage)
             {
                 Orders = GetOrderHistoryViewModels(),
                 Addresses = GetAddressViewModels(),
                 SiteUser = CustomerService.GetSiteUser(User.Identity.Name),
-                CustomerContact = new Commerce.Customer.FoundationContact(CustomerService.GetCurrentContact().Contact)
+                CustomerContact = new Commerce.Customer.FoundationContact(CustomerService.GetCurrentContact().Contact),
+                OrderDetailsPageUrl = UrlResolver.Current.GetUrl(_settingsService.GetSiteSettings<ReferencePageSettings>()?.OrderDetailsPage ?? ContentReference.StartPage),
+                ResetPasswordPage = UrlResolver.Current.GetUrl(_settingsService.GetSiteSettings<ReferencePageSettings>()?.ResetPasswordPage ?? ContentReference.StartPage),
+                AddressBookPage = UrlResolver.Current.GetUrl(_settingsService.GetSiteSettings<ReferencePageSettings>()?.AddressBookPage ?? ContentReference.StartPage)
             };
-
-            viewModel.OrderDetailsPageUrl = UrlResolver.Current.GetUrl(_contentLoader.Get<CommerceHomePage>(ContentReference.StartPage).OrderDetailsPage);
 
             return View(viewModel);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public JsonResult Save(Social.Models.Pages.ProfilePage currentPage, AccountInformationViewModel viewModel)
+        public JsonResult Save(ProfilePage currentPage, AccountInformationViewModel viewModel)
         {
             var user = CustomerService.GetSiteUser(User.Identity.Name);
             var contact = CustomerService.GetCurrentContact();

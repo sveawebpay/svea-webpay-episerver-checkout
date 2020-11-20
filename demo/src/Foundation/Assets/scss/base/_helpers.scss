@@ -9,6 +9,11 @@ body {
     overflow-x: hidden;
 }
 
+video {
+    width: 100%;
+    height: auto;
+}
+
 /* Override bootstrap container for 1200px and up */
 .container {
     @include media-breakpoint-up(xl) {
@@ -22,6 +27,10 @@ div.block {
     vertical-align: top;
     padding-left: 0;
     padding-right: 0;
+}
+
+.display-none {
+    display: none;
 }
 
 hr {
@@ -189,4 +198,41 @@ ul.none-style-type {
     cursor: default;
     background-color: lightgray;
     border: 0;
+}
+
+.address-block {
+    margin-top: 15px;
+    border-top: 1px solid #eeeeee;
+    padding-top: 20px;
+}
+
+a.account-link {
+    text-decoration: underline;
+    color: #555;
+
+    &:hover {
+        opacity: 0.7;
+    }
+}
+
+.image-full-width {
+    width: 100%;
+    height: auto;
+}
+
+.input-block {
+    padding-top: 15px;
+    display: flex;
+    align-items: flex-end;
+    flex-basis: 50%;
+    justify-content: space-between;
+}
+
+.form-square {
+    border-radius: 0;
+}
+
+.tier-icon {
+    width: 25px;
+    height: 25px;
 }
