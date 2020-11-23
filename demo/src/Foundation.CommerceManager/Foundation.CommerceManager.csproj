@@ -435,13 +435,6 @@
     <Content Include="Default.aspx" />
     <Content Include="EPiServerDefault.aspx" />
     <Content Include="Global.asax" />
-    <Compile Include="Apps\Order\Payments\Plugins\SveaWebPayCheckout\ConfigurePayment.ascx.cs">
-      <DependentUpon>ConfigurePayment.ascx</DependentUpon>
-      <SubType>ASPXCodeBehind</SubType>
-    </Compile>
-    <Compile Include="Apps\Order\Payments\Plugins\SveaWebPayCheckout\ConfigurePayment.ascx.designer.cs">
-      <DependentUpon>ConfigurePayment.ascx</DependentUpon>
-    </Compile>
     <Compile Include="CustomCommands\B2BSaveChangesHandler.cs" />
     <Compile Include="CustomCommands\FinishQuoteRequest.cs" />
     <Compile Include="IRIConfigurationModule.cs" />
