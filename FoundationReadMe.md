@@ -1,7 +1,9 @@
 ## Changes to the code
+
+#### The Currency values of both arguments must match 
 To solve the error ´The Currency values of both arguments must match´ when changing to SWE market, update the price filter to only fetch prices with current currency.
 
-In Foundation.Commerce.Extensions.EntryContentBaseExtensions.cs add following in the top of the file
+In `Foundation.Commerce.Extensions.EntryContentBaseExtensions.cs` add following in the top of the file
 
 ```CSharp
 private static readonly Lazy<ICurrencyService> CurrencyService =
@@ -16,6 +18,10 @@ And in method `Prices` in the same file, when creating PriceFilter, change to fo
                 Currencies = new Currency[] { CurrencyService.Value.GetCurrentCurrency() }
             };
 ```
+
+#### Update price when changing quantity on checkout
+When changing quantity on a line item, price in Svea window isn't updated. That's because the cart isn't saved before inializing the payment. To solve this, add `orderRepository.Save(CartWithValidationIssues.Cart);` directly after `_cartService.ChangeQuantity()` has been called. In `Foundation.Features.Checkout.CheckoutController.cs` and the method `ChangeCartItem`
+
 
 ## Changes in web.config  
 To solve the error found in console:   
