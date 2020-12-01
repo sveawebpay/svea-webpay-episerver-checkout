@@ -710,6 +710,7 @@ namespace Foundation.Features.Checkout
         public ActionResult ChangeCartItem(CheckoutPage currentPage, string code, int quantity, int shipmentId = -1)
         {
             var result = _cartService.ChangeQuantity(CartWithValidationIssues.Cart, shipmentId, code, quantity);
+            _orderRepository.Save(CartWithValidationIssues.Cart);
             var model = CreateCheckoutViewModel(currentPage);
 
             foreach (var payment in model.Payments)
