@@ -12,7 +12,7 @@ namespace Foundation.SystemTests.PageObjectModels.CommerceSite.Base
         [FindByClass("market-selector")]
         public Clickable<TOwner> Market { get; private set; }
 
-        [FindByCss("*[data-marketid='SWE']")]
+        [FindByContent("Sweden")]
         public Clickable<TOwner> SwedenMarket { get; private set; }
 
         [Wait(1, TriggerEvents.BeforeHover)]
@@ -22,7 +22,7 @@ namespace Foundation.SystemTests.PageObjectModels.CommerceSite.Base
         [FindByContent(TermMatch.Contains, "Shoes")]
         public Link<TOwner> Shoes { get; private set; }
 
-        [FindByClass("notifyjs-container")]
+        [FindByCss("*[data-notify='container']")]
         public Control<TOwner> Notification { get; private set; }
 
         [Wait(1, TriggerEvents.BeforeClick)]
