@@ -14,13 +14,14 @@ set APPCMD=%windir%\system32\inetsrv\appcmd.exe
 
 if "%~1" == "" goto loop
 
-for /f "tokens=1-5*" %%a in ("%*") do (
+for /f "tokens=1-7*" %%a in ("%*") do (
 	set APPNAME=%%a
 	set FOUNDATIONDOMAIN=%%b
 	set CMDOMAIN=%%c
 	set LICENSEPATH=%%d
 	set SQLSERVER=%%e
 	set ADDITIONAL_SQLCMD=%%f
+	set SETUP_CONRTOLLER=%%g
 )
 goto main
 
@@ -107,7 +108,7 @@ echo msbuild.exe path: %InstallDir%%msBuildPath%
 
 echo ## Set folder permissions ##
 md "%ROOTPATH%\Build\Logs" 2>nul
-icacls "%ROOTPATH%\\" /grant *S-1-1-0:(OI)(CI)F /T > Build\Logs\Build.log
+icacls "%ROOTPATH%\\" /grant *S-1-1-0:(OI)(CI)F /T > nul
 
 echo ## Restoring Nuget packages ##
 echo ## Restoring Nuget packages ## >> Build\Logs\Build.log
@@ -121,11 +122,8 @@ IF %errorlevel% NEQ 0 (
 	set errorMessage=%errorlevel%
 	goto error
 )
+CALL npm run dev
 cd %ROOTPATH%
-
-echo ## Gulp Install ##
-echo ## Gulp Install ## >> Build\Logs\Build.log			  
-call gulp -b "%SOURCEPATH%\Foundation" --color --gulpfile "%SOURCEPATH%\Foundation\Gulpfile.js" >> Build\Logs\Build.log || call npm install gulp -g && call gulp -b "%SOURCEPATH%\Foundation" --color --gulpfile "%SOURCEPATH%\Foundation\Gulpfile.js" >> Build\Logs\Build.log
 
 echo ## Clean and build ##
 echo ## Clean and build ## >> Build\Logs\Build.log				 
@@ -242,8 +240,8 @@ RD "%ROOTPATH%\packages\" /Q /S >> Build\Logs\Build.log
 
 echo ## Set folder permissions ##
 echo ## Set folder permissions ## >> Build\Logs\Build.log
-icacls "%ROOTPATH%" /grant Everyone:(OI)(CI)F /T >> Build\Logs\Build.log
-attrib -r "%ROOTPATH%\*.*" /s >> Build\Logs\Build.log
+icacls "%ROOTPATH%" /grant Everyone:(OI)(CI)F /T > nul
+attrib -r "%ROOTPATH%\*.*" /s > nul
 
 echo ## Creating IIS application pools ##
 echo ## Creating IIS application pools ## > Build\Logs\IIS.log
@@ -339,8 +337,11 @@ echo --^>
 echo ^</connectionStrings^>
 ) > "%SOURCEPATH%\Foundation.CommerceManager\connectionStrings.config"
 
-
-start http://%FOUNDATIONDOMAIN%/setup
+if "%SETUP_CONRTOLLER%"=="" (
+    start http://%FOUNDATIONDOMAIN%/
+) else (
+    start http://%FOUNDATIONDOMAIN%/setup
+)
 :error
 if NOT "%errorMessage%"=="" echo %errorMessage%
 

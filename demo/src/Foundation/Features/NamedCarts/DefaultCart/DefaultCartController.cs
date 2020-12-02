@@ -8,15 +8,21 @@ using EPiServer.Web.Mvc;
 using EPiServer.Web.Mvc.Html;
 using EPiServer.Web.Routing;
 using Foundation.Cms.Extensions;
+using Foundation.Cms.Settings;
 using Foundation.Commerce;
-using Foundation.Commerce.Catalog;
 using Foundation.Commerce.Customer;
 using Foundation.Commerce.Customer.Services;
 using Foundation.Commerce.Extensions;
-using Foundation.Commerce.Models.Pages;
-using Foundation.Commerce.Order.Services;
-using Foundation.Commerce.Order.ViewModels;
-using Foundation.Commerce.Personalization;
+using Foundation.Features.CatalogContent.Services;
+using Foundation.Features.Checkout.Payments;
+using Foundation.Features.Checkout.Services;
+using Foundation.Features.Checkout.ViewModels;
+using Foundation.Features.Header;
+using Foundation.Features.MyAccount.OrderConfirmation;
+using Foundation.Features.Settings;
+using Foundation.Infrastructure;
+using Foundation.Personalization;
+using Mediachase.Commerce;
 using Mediachase.Commerce.Catalog;
 using Mediachase.Commerce.Orders;
 using Mediachase.Commerce.Security;
@@ -51,6 +57,9 @@ namespace Foundation.Features.NamedCarts.DefaultCart
         private readonly CartItemViewModelFactory _cartItemViewModelFactory;
         private readonly IProductService _productService;
         private readonly LanguageResolver _languageResolver;
+        private readonly ISettingsService _settingsService;
+        private readonly IPaymentService _paymentService;
+        private readonly ICurrentMarket _currentMarket;
 
         private const string b2cMinicart = "~/Features/Shared/Foundation/Header/_HeaderCart.cshtml";
 
@@ -69,7 +78,10 @@ namespace Foundation.Features.NamedCarts.DefaultCart
             IOrderGroupCalculator orderGroupCalculator,
             CartItemViewModelFactory cartItemViewModelFactory,
             IProductService productService,
-            LanguageResolver languageResolver)
+            LanguageResolver languageResolver,
+            ISettingsService settingsService,
+            IPaymentService paymentService,
+            ICurrentMarket currentMarket)
 
         {
             _cartService = cartService;
@@ -87,6 +99,9 @@ namespace Foundation.Features.NamedCarts.DefaultCart
             _cartItemViewModelFactory = cartItemViewModelFactory;
             _productService = productService;
             _languageResolver = languageResolver;
+            _settingsService = settingsService;
+            _paymentService = paymentService;
+            _currentMarket = currentMarket;
         }
 
         private CartWithValidationIssues CartWithValidationIssues => _cart ?? (_cart = _cartService.LoadCart(_cartService.DefaultCartName, true));
@@ -284,10 +299,10 @@ namespace Foundation.Features.NamedCarts.DefaultCart
 
         public JsonResult RedirectToCart(string message)
         {
-            var homePage = _contentLoader.Get<PageData>(ContentReference.StartPage) as CommerceHomePage;
-            if (homePage?.CartPage != null)
+            var referencePages = _settingsService.GetSiteSettings<ReferencePageSettings>();
+            if (referencePages?.CartPage.IsNullOrEmpty() ?? false)
             {
-                var cartPage = _contentLoader.Get<CartPage>(homePage.CartPage);
+                var cartPage = _contentLoader.Get<CartPage>(referencePages.CartPage);
                 return Json(new { Redirect = cartPage.StaticLinkURL, Message = message });
             }
 
@@ -366,12 +381,13 @@ namespace Foundation.Features.NamedCarts.DefaultCart
             }
 
             var totals = _orderGroupCalculator.GetOrderGroupTotals(CartWithValidationIssues.Cart);
-
+            var creditCardPayment = _paymentService.GetPaymentMethodsByMarketIdAndLanguageCode(CartWithValidationIssues.Cart.MarketId.Value, _currentMarket.GetCurrentMarket().DefaultLanguage.Name).FirstOrDefault(x => x.SystemKeyword == "GenericCreditCard");
             var payment = CartWithValidationIssues.Cart.CreateCardPayment();
+
             payment.BillingAddress = paymentAddress;
             payment.CardType = "Credit card";
-            payment.PaymentMethodId = new Guid("B1DA37A6-CF19-40D5-915B-B863D74D8799");
-            payment.PaymentMethodName = "GenericCreditCard";
+            payment.PaymentMethodId = creditCardPayment.PaymentMethodId;
+            payment.PaymentMethodName = creditCardPayment.SystemKeyword;
             payment.Amount = CartWithValidationIssues.Cart.GetTotal().Amount;
             payment.CreditCardNumber = creditCard.CreditCardNumber;
             payment.CreditCardSecurityCode = creditCard.SecurityCode;
@@ -393,10 +409,10 @@ namespace Foundation.Features.NamedCarts.DefaultCart
             //await _checkoutService.CreateBoughtProductsSegments(CartWithValidationIssues.Cart);
             await _recommendationService.TrackOrder(HttpContext, order);
 
-            var homePage = _contentLoader.Get<PageData>(ContentReference.StartPage) as CommerceHomePage;
-            if (homePage?.OrderConfirmationPage != null)
+            var referencePages = _settingsService.GetSiteSettings<ReferencePageSettings>();
+            if (!(referencePages?.OrderConfirmationPage.IsNullOrEmpty() ?? true))
             {
-                var orderConfirmationPage = _contentLoader.Get<OrderConfirmationPage>(homePage.OrderConfirmationPage);
+                var orderConfirmationPage = _contentLoader.Get<OrderConfirmationPage>(referencePages.OrderConfirmationPage);
                 var queryCollection = new NameValueCollection
                 {
                     {"contactId", contact.PrimaryKeyId?.ToString()},
@@ -526,14 +542,12 @@ namespace Foundation.Features.NamedCarts.DefaultCart
 
             var viewModel = _cartViewModelFactory.CreateLargeCartViewModel(CartWithValidationIssues.Cart, currentPage); ;
             return View("LargeCart", viewModel);
-
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<ActionResult> Reorder(string orderId)
         {
-
             if (!int.TryParse(orderId, out var orderIntId))
             {
                 return new HttpStatusCodeResult(500, "Error reordering order");
@@ -570,7 +584,7 @@ namespace Foundation.Features.NamedCarts.DefaultCart
             }
 
             _orderRepository.Save(CartWithValidationIssues.Cart);
-            return Redirect(Url.ContentUrl(_contentLoader.Get<CommerceHomePage>(ContentReference.StartPage).CheckoutPage));
+            return Redirect(Url.ContentUrl(_settingsService.GetSiteSettings<ReferencePageSettings>()?.CheckoutPage ?? ContentReference.StartPage));
         }
 
         [HttpPost]
@@ -811,10 +825,9 @@ namespace Foundation.Features.NamedCarts.DefaultCart
 
             var placedOrderId = _cartService.PlaceCartForQuoteById(orderId, currentCustomer.ContactId);
 
-            var startPage = _contentLoader.Get<CommerceHomePage>(ContentReference.StartPage);
-
-            return RedirectToAction("Index", "OrderDetails",
-                new { currentPage = startPage.OrderDetailsPage, orderGroupId = placedOrderId });
+            var referencePages = _settingsService.GetSiteSettings<ReferencePageSettings>();
+            var orderDetailUrl = Url.ContentUrl(referencePages.OrderDetailsPage);
+            return Redirect(orderDetailUrl + "?orderGroupId=" + placedOrderId);
         }
 
         [HttpPost]

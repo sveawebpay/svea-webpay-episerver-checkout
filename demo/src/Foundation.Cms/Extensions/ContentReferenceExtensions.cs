@@ -29,6 +29,8 @@ namespace Foundation.Cms.Extensions
         private static readonly Lazy<ISiteDefinitionResolver> SiteDefinitionResolver =
             new Lazy<ISiteDefinitionResolver>(() => ServiceLocator.Current.GetInstance<ISiteDefinitionResolver>());
 
+        public static bool IsNullOrEmpty(this ContentReference contentReference) => ContentReference.IsNullOrEmpty(contentReference);
+
         public static IContent Get<TContent>(this ContentReference contentLink) where TContent : IContent => ContentLoader.Value.Get<TContent>(contentLink);
 
         public static IEnumerable<T> GetAllRecursively<T>(this ContentReference rootLink) where T : PageData
@@ -92,10 +94,7 @@ namespace Foundation.Cms.Extensions
         /// </summary>
         /// <param name="contentRef">The content reference of a routable content item to get the URL for.</param>
         /// <param name="isAbsolute">Whether the full URL including protocol and host should be returned.</param>
-        public static Uri GetUri(this ContentReference contentRef, bool isAbsolute = false)
-        {
-            return contentRef.GetUri(ContentLanguage.PreferredCulture.Name, isAbsolute);
-        }
+        public static Uri GetUri(this ContentReference contentRef, bool isAbsolute = false) => contentRef.GetUri(ContentLanguage.PreferredCulture.Name, isAbsolute);
 
         /// <summary>
         /// Helper method to get a URL string for a content reference using the provided culture code
@@ -121,9 +120,20 @@ namespace Foundation.Cms.Extensions
             //Work out the correct domain to use from the hosts defined in the site definition
             var siteDefinition = SiteDefinitionResolver.Value.GetByContent(contentRef, true, true);
             var host = siteDefinition.Hosts.FirstOrDefault(h => h.Type == HostDefinitionType.Primary) ?? siteDefinition.Hosts.FirstOrDefault(h => h.Type == HostDefinitionType.Undefined);
-            var baseUrl = (host?.Name ?? "*").Equals("*") ? siteDefinition.SiteUrl : new Uri($"http{((host.UseSecureConnection ?? false) ? "s" : string.Empty)}://{host.Name}");
+            Uri baseUrl;
+
+            if (host != null)
+            {
+                baseUrl = (host?.Name ?? "*").Equals("*") ? siteDefinition.SiteUrl : new Uri($"http{((host.UseSecureConnection ?? false) ? "s" : string.Empty)}://{host.Name}");
+            }
+            else
+            {
+                var siteDef = SiteDefinitionResolver.Value.GetByContent(ContentReference.StartPage, true, true);
+                var siteDefHost = siteDef.Hosts.FirstOrDefault(h => h.Type == HostDefinitionType.Primary) ?? siteDefinition.Hosts.FirstOrDefault(h => h.Type == HostDefinitionType.Undefined);
+                baseUrl = (siteDefHost?.Name ?? "*").Equals("*") ? siteDef.SiteUrl : new Uri($"http{((siteDefHost.UseSecureConnection ?? false) ? "s" : string.Empty)}://{siteDefHost.Name}");
+            }
+
             return new Uri(baseUrl, urlString);
         }
-
     }
 }

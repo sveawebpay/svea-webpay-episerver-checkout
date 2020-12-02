@@ -1,10 +1,6 @@
-﻿using EPiServer;
-using EPiServer.Web.Routing;
-using Foundation.Cms.ViewModels.Header;
-using Foundation.Commerce.Customer.Services;
-using Foundation.Commerce.Customer.ViewModels;
-using Foundation.Demo.Models;
-using Foundation.Demo.ViewModels;
+﻿using EPiServer.Web.Routing;
+using Foundation.Features.Home;
+using Foundation.Features.MyAccount.AddressBook;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Web.Mvc;
@@ -15,29 +11,27 @@ namespace Foundation.Features.Header
     {
         private readonly IHeaderViewModelFactory _headerViewModelFactory;
         private readonly IContentRouteHelper _contentRouteHelper;
-        private readonly IContentLoader _contentLoader;
         private readonly IAddressBookService _addressBookService;
         private static string _pluginVersion;
         private static string _sdkVersion;
 
         public HeaderController(IHeaderViewModelFactory headerViewModelFactory,
             IContentRouteHelper contentRouteHelper,
-            IContentLoader contentLoader,
             IAddressBookService addressBookService)
         {
             _headerViewModelFactory = headerViewModelFactory;
             _contentRouteHelper = contentRouteHelper;
-            _contentLoader = contentLoader;
             _addressBookService = addressBookService;
         }
 
         [ChildActionOnly]
-        public ActionResult GetHeader(DemoHomePage homePage)
+        public ActionResult GetHeader(HomePage homePage)
         {
             var content = _contentRouteHelper.Content;
+            
             if (string.IsNullOrWhiteSpace(_pluginVersion))
             {
-                var pluginAssembly = typeof(Foundation.Startup).Assembly;
+                var pluginAssembly = typeof(Startup).Assembly;
                 var pluginVersionInfo = FileVersionInfo.GetVersionInfo(pluginAssembly.Location);
                 _pluginVersion = pluginVersionInfo.ProductVersion;
             }
@@ -49,17 +43,18 @@ namespace Foundation.Features.Header
                 _sdkVersion = sdkVersionInfo.ProductVersion;
             }
 
-            var demoHeaderViewModel = _headerViewModelFactory.CreateHeaderViewModel<DemoHeaderViewModel>(content, homePage);
-            demoHeaderViewModel.PluginVersion = _pluginVersion;
-            demoHeaderViewModel.SdkVersion = _sdkVersion;
+            var headerViewModel = _headerViewModelFactory.CreateHeaderViewModel(content, homePage);
 
-            return PartialView("_Header", demoHeaderViewModel);
+            headerViewModel.PluginVersion = _pluginVersion;
+            headerViewModel.SdkVersion = _sdkVersion;
+
+            return PartialView("_Header", headerViewModel);
         }
 
         [ChildActionOnly]
-        public ActionResult GetHeaderLogoOnly(DemoHomePage homePage)
+        public ActionResult GetHeaderLogoOnly()
         {
-            return PartialView("_HeaderLogo", homePage);
+            return PartialView("_HeaderLogo", _headerViewModelFactory.CreateHeaderLogoViewModel());
         }
 
         public ActionResult GetCountryOptions(string inputName)
@@ -67,7 +62,7 @@ namespace Foundation.Features.Header
             var model = new List<CountryViewModel>() { new CountryViewModel() { Name = "Select", Code = "undefined" } };
             model.AddRange(_addressBookService.GetAllCountries());
             ViewData["Name"] = inputName;
-            return PartialView("~/Features/Shared/Foundation/DisplayTemplates/CountryOptions.cshtml", model);
+            return PartialView("~/Features/Shared/Views/DisplayTemplates/CountryOptions.cshtml", model);
         }
     }
 }

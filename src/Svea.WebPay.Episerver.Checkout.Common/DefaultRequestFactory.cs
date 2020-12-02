@@ -16,7 +16,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-
+using Svea.WebPay.Episerver.Checkout.Common.Extensions;
 using OrderRow = Svea.WebPay.SDK.CheckoutApi.OrderRow;
 
 namespace Svea.WebPay.Episerver.Checkout.Common
@@ -164,7 +164,7 @@ namespace Svea.WebPay.Episerver.Checkout.Common
 
                 var discountPercent = (item.GetEntryDiscount() / (item.GetDiscountedPrice(currency) + item.GetEntryDiscount()));
 
-                return new OrderRow(item.Code, item.DisplayName, MinorUnit.FromDecimal(item.Quantity), MinorUnit.FromDecimal(unitPrice),
+                return new OrderRow(item.Code, item.DisplayName.TrimIfNecessary(40), MinorUnit.FromDecimal(item.Quantity), MinorUnit.FromDecimal(unitPrice),
                     MinorUnit.FromDecimal(discountPercent * 100), MinorUnit.FromDecimal(vatPercent * 100), "PCS", null, item.LineItemId, null);
             });
         }
@@ -187,7 +187,7 @@ namespace Svea.WebPay.Episerver.Checkout.Common
             var discountPercent = extendPrice.Amount > 0 ? (extendPrice.Amount - discountedShippingAmount.Amount) / extendPrice.Amount : 0;
 
             var shippingMethodInfoModel = ShippingManager.GetShippingMethod(shipment.ShippingMethodId).ShippingMethod.Single();
-            return new OrderRow("SHIPPING", shippingMethodInfoModel.DisplayName, MinorUnit.FromInt(1), MinorUnit.FromDecimal(unitPrice.Amount),
+            return new OrderRow("SHIPPING", shippingMethodInfoModel.DisplayName.TrimIfNecessary(40), MinorUnit.FromInt(1), MinorUnit.FromDecimal(unitPrice.Amount),
                 MinorUnit.FromDecimal(discountPercent * 100), MinorUnit.FromDecimal(vatPercent * 100),
                 "PCS", null, 999, null);
         }

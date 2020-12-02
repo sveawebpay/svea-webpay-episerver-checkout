@@ -5,13 +5,13 @@ using EPiServer.Security;
 using EPiServer.Web.Mvc.Html;
 using EPiServer.Web.Routing;
 using Foundation.Cms;
+using Foundation.Cms.Settings;
 using Foundation.Commerce.Customer.Services;
-using Foundation.Commerce.Customer.ViewModels;
-using Foundation.Commerce.Models.Pages;
-using Foundation.Commerce.Order.Services;
-using Foundation.Commerce.Order.ViewModelFactories;
-using Foundation.Commerce.Order.ViewModels;
+using Foundation.Features.Checkout.Services;
+using Foundation.Features.Checkout.ViewModels;
+using Foundation.Features.MyAccount.AddressBook;
 using Foundation.Features.MyAccount.OrderConfirmation;
+using Foundation.Features.Settings;
 using Mediachase.Commerce.Orders;
 using Mediachase.Commerce.Orders.Managers;
 using Mediachase.Commerce.Security;
@@ -33,6 +33,7 @@ namespace Foundation.Features.MyAccount.OrderHistory
         private readonly IOrderGroupFactory _orderGroupFactory;
         private readonly PaymentMethodViewModelFactory _paymentMethodViewModelFactory;
         private readonly CookieService _cookieService;
+        private readonly ISettingsService _settingsService;
 
         private const string _KEYWORD = "OrderHistoryPage:Keyword";
         private const string _DATEFROM = "OrderHistoryPage:DateFrom";
@@ -52,7 +53,8 @@ namespace Foundation.Features.MyAccount.OrderHistory
             IContentLoader contentLoader,
             UrlResolver urlResolver, IOrderGroupFactory orderGroupFactory, ICustomerService customerService,
             PaymentMethodViewModelFactory paymentMethodViewModelFactory,
-            CookieService cookieService) :
+            CookieService cookieService,
+            ISettingsService settingsService) :
             base(confirmationService, addressBookService, orderGroupCalculator, urlResolver, customerService)
         {
             _addressBookService = addressBookService;
@@ -62,6 +64,7 @@ namespace Foundation.Features.MyAccount.OrderHistory
             _orderGroupFactory = orderGroupFactory;
             _paymentMethodViewModelFactory = paymentMethodViewModelFactory;
             _cookieService = cookieService;
+            _settingsService = settingsService;
         }
 
         [AcceptVerbs(HttpVerbs.Get | HttpVerbs.Post)]
@@ -123,7 +126,7 @@ namespace Foundation.Features.MyAccount.OrderHistory
                 viewModel.Orders.Add(orderViewModel);
             }
             viewModel.OrderDetailsPageUrl =
-             UrlResolver.Current.GetUrl(_contentLoader.Get<CommerceHomePage>(ContentReference.StartPage).OrderDetailsPage);
+             UrlResolver.Current.GetUrl(_settingsService.GetSiteSettings<ReferencePageSettings>()?.OrderDetailsPage ?? ContentReference.StartPage);
 
             viewModel.PagingInfo.PageNumber = pageNum;
             viewModel.PagingInfo.TotalRecord = purchaseOrders.Count();
@@ -133,10 +136,7 @@ namespace Foundation.Features.MyAccount.OrderHistory
             return View(viewModel);
         }
 
-        public ActionResult ViewAll()
-        {
-            return Redirect(UrlResolver.Current.GetUrl(_contentLoader.Get<CommerceHomePage>(ContentReference.StartPage).OrderHistoryPage));
-        }
+        public ActionResult ViewAll() => Redirect(UrlResolver.Current.GetUrl(_settingsService.GetSiteSettings<ReferencePageSettings>()?.OrderHistoryPage ?? ContentReference.StartPage));
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -175,8 +175,9 @@ namespace Foundation.Features.MyAccount.OrderHistory
             paymentPlan.LastTransactionDate = DateTime.UtcNow;
             paymentPlan.CompletedCyclesCount++;
             _orderRepository.Save(paymentPlan);
-            var homePage = _contentLoader.Get<CommerceHomePage>(ContentReference.StartPage);
-            var paymentPlanPageUrl = Url.ContentUrl(homePage.PaymentPlanDetailsPage) + $"?paymentPlanId={paymentPlan.OrderLink.OrderGroupId}";
+
+            var paymentPlanPageUrl = Url.ContentUrl(_settingsService.GetSiteSettings<ReferencePageSettings>()?.PaymentPlanDetailsPage ?? ContentReference.StartPage)
+                + $"?paymentPlanId={paymentPlan.OrderLink.OrderGroupId}";
             return Redirect(paymentPlanPageUrl);
         }
 
@@ -213,10 +214,7 @@ namespace Foundation.Features.MyAccount.OrderHistory
             filter.Addresses.AddRange(addresses.Select(x => new KeyValuePair<string, string>(x.Name, x.AddressId)));
         }
 
-        private IEnumerable<IPurchaseOrder> FilterOrders(IEnumerable<IPurchaseOrder> orders, OrderFilter filter)
-        {
-            return orders.Where(x => Filter(filter, x));
-        }
+        private IEnumerable<IPurchaseOrder> FilterOrders(IEnumerable<IPurchaseOrder> orders, OrderFilter filter) => orders.Where(x => Filter(filter, x));
 
         private bool Filter(OrderFilter filter, IPurchaseOrder order)
         {
@@ -289,8 +287,10 @@ namespace Foundation.Features.MyAccount.OrderHistory
 
         private OrderFilter GetFilter()
         {
-            var filter = new OrderFilter();
-            filter.Keyword = _cookieService.Get(_KEYWORD);
+            var filter = new OrderFilter
+            {
+                Keyword = _cookieService.Get(_KEYWORD)
+            };
 
             var dateFromStr = _cookieService.Get(_DATEFROM);
             if (!string.IsNullOrEmpty(dateFromStr))
