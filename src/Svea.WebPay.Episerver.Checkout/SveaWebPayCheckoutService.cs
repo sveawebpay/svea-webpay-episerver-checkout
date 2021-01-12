@@ -13,6 +13,7 @@ using Svea.WebPay.SDK.CheckoutApi;
 
 using System;
 using System.Globalization;
+using System.Linq;
 
 namespace Svea.WebPay.Episerver.Checkout
 {
@@ -52,6 +53,12 @@ namespace Svea.WebPay.Episerver.Checkout
 
         public virtual Data CreateOrUpdateOrder(IOrderGroup orderGroup, CultureInfo currentLanguage)
         {
+	        var allLineItems = orderGroup.GetAllLineItems();
+	        if(allLineItems == null || !allLineItems.Any())
+            {
+	            return null;
+            }
+
             if (long.TryParse(orderGroup.Properties[Constants.SveaWebPayOrderIdField]?.ToString(), out var orderId))
             {
                 return UpdateOrder(orderGroup, currentLanguage, orderId);
