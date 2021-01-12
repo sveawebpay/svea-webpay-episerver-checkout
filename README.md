@@ -1,21 +1,34 @@
 # Svea.WebPay.Episerver.Checkout
 
-
 ## Links
-[Test-Data](https://www.svea.com/globalassets/sweden/foretag/betallosningar/e-handel/integrationspaket-logos-and-doc.-integration-test-instructions-webpay/test-instructions-webpay-partners-.pdf), In the documentation it says checkoutID, it's the same as later called MerchantId.  
+[Test-Data](https://www.svea.com/globalassets/sweden/foretag/betallosningar/e-handel/integrationspaket-logos-and-doc.-integration-test-instructions-webpay/test-instructions-webpay-partners..pdf), In the documentation it says checkoutID, it's the same as later called MerchantId.  
 [Svea Payment Admin](https://paymentadminstage.svea.com/)  
 [Svea SDK](https://github.com/sveawebpay/svea-sdk-dotnet)
 
 
-# The installation assumes that you have Foundation installed
-[Foundation](https://github.com/episerver/Foundation)  
-Read [FoundationReadMe](https://github.com/sveawebpay/svea-webpay-episerver-checkout/blob/develop/FoundationReadMe.md) to fix code and web.config issues with Foundation.
+## Table of Contents
 
-# OBS ngrok for callbacks https://ngrok.com/
+- [Pre-installation](#pre-installation)
+- [How to get started](#how-to-get-started)
+- [Configure Commerce Manager](#configure-commerce-manager)
+- [Setup](#setup)
+- [Known Issues](#known-issues)
+- [Misc](#misc)
+
+---
+
+## Pre-installation
 Callbacks from Svea is used both to validate order and when a purchase is completed. So to be able to develop and test, ngrok needs to be used.
 
-# How to get started
-## Install following NuGet packages
+The installation assumes that you have Foundation installed, and are using ngrok for callbacks.  
+[Foundation](https://github.com/episerver/Foundation)  
+Read [FoundationReadMe](https://github.com/sveawebpay/svea-webpay-episerver-checkout/blob/develop/FoundationReadMe.md) to fix code and web.config issues with Foundation.  
+[ngrok](https://ngrok.com/)  
+
+---
+
+## How to get started
+### Install following NuGet packages
 For project Foundation and Foundation.Commerce:
 ```
 Install-Package Svea.WebPay.Episerver.Checkout 
@@ -26,7 +39,9 @@ For project Foundation.CommerceManager:
 Install-Package Svea.WebPay.Episerver.Checkout.CommerceManager
 ```
 
-# Configure Commerce Manager
+---
+
+## Configure Commerce Manager
 Login into Commerce Manager and open Administration -> Order System -> Payments. Then click New and in Overview tab fill:
 - Name: Svea Checkout
 - System Keyword: SveaWebPayCheckout
@@ -66,9 +81,10 @@ Promoted Part Payment Campaign: {campaignId}
 
 {Your domain} in the URL's should be updated to your host.
 
+---
 
-# Setup
-## Payment Method
+## Setup
+### Payment Method
 You need to add a PaymentMethod to the site.
 Following is an example of a PaymentMethod using Svea Checkout
 
@@ -336,7 +352,7 @@ To initialize Svea checkout when loading the GUI, update GetPaymentMethodViewMod
         }
 ```
 
-## Endpoints
+### Endpoints
 Add a controller for callbacks, e.g Foundation/Features/Checkout/SveaWebPayCheckoutController.cs
 ```Csharp
 
@@ -458,7 +474,7 @@ namespace Foundation.Features.Checkout
 
 ```
 
-# Frontend
+### Frontend
 Add view Foundation\\Features\\Checkout\\_SveaWebPayCheckoutPaymentMethod.cshtml
 
 ```html
@@ -488,5 +504,13 @@ Add view Foundation\\Features\\MyAccount\\OrderConfirmation\\_SveaWebPayCheckout
 </div>
 ```
 
-# Misc
-A common issue when setting up Svea Checkout is that the thank you page isn't displayed after a completed purchase. That's because the Index action in `Foundation.Features.MyAccount.OrderConfirmation.OrderConfirmationController` expects an orderNumber, and the order is created first on callback. Therefore, you will be redirected to the start page and the cart disappears on the callback. This logic is part of the Foundation and needs to be adjusted to suite your needs.
+---
+
+## Known issues
+* [DiscountPercent on a order row can't contain any fractions](https://checkoutapi.svea.com/docs/html/reference/web-api/data-types/orderrow.htm), therefore if entering a discount with decimals it won't work. However a new version of the API will soon be released that adds a DiscountAmount property instead.
+
+---
+## Misc
+* Supported languages: swedish, norwegian, danish, finnish and german
+* Supported currencies: SEK, NOK, DKK and EUR
+* A common issue when setting up Svea Checkout is that the thank you page isn't displayed after a completed purchase. That's because the Index action in `Foundation.Features.MyAccount.OrderConfirmation.OrderConfirmationController` expects an orderNumber, and the order is created first on callback. Therefore, you will be redirected to the start page and the cart disappears on the callback. This logic is part of the Foundation and needs to be adjusted to suite your needs.
