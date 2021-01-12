@@ -22,6 +22,11 @@ And in method `Prices` in the same file, when creating PriceFilter, change to fo
 #### Update price when changing quantity on checkout
 When changing quantity on a line item, price in Svea window isn't updated. That's because the cart isn't saved before inializing the payment. To solve this, add `orderRepository.Save(CartWithValidationIssues.Cart);` directly after `_cartService.ChangeQuantity()` has been called. In `Foundation.Features.Checkout.CheckoutController.cs` and the method `ChangeCartItem`
 
+#### Set correct price when adding/removing coupon code
+When adding/removing coupon codes, cart isn't saved with the applied coupon code before creating the view model. 
+In `Foundation.Features.Checkout.CheckoutController.cs`, the following methods `AddCouonCode` and `RemoveCouponCode` Call `_orderRepository.Save(CartWithValidationIssues.Cart);` before creating model `var model = CreateCheckoutViewModel(currentPage);` so that the coupon is applied when calling Svea Api.
+
+
 
 ## Changes in web.config  
 To solve the error found in console:   

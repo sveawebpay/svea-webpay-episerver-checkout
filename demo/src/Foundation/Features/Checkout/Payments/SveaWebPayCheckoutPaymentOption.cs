@@ -108,8 +108,8 @@ namespace Foundation.Features.Checkout.Payments
 
                 VerifyCartHasShippingCountry(cart);
                 var paymentOrder = _sveaWebPayCheckoutService.CreateOrUpdateOrder(cart, _languageService.GetCurrentLanguage());
-                HtmlSnippet = paymentOrder.Gui.Snippet;
-                _isInitalized = true;
+                HtmlSnippet = paymentOrder?.Gui.Snippet;
+                _isInitalized = paymentOrder != null;
             }
         }
 

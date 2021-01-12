@@ -269,6 +269,7 @@ namespace Foundation.Features.Checkout
         {
             if (_cartService.AddCouponCode(CartWithValidationIssues.Cart, couponCode))
             {
+                _orderRepository.Save(CartWithValidationIssues.Cart);
                 var model = CreateCheckoutViewModel(currentPage);
 
                 foreach (var payment in model.Payments)
@@ -295,6 +296,7 @@ namespace Foundation.Features.Checkout
         public ActionResult RemoveCouponCode(CheckoutPage currentPage, string couponCode)
         {
             _cartService.RemoveCouponCode(CartWithValidationIssues.Cart, couponCode);
+            _orderRepository.Save(CartWithValidationIssues.Cart);
             var model = CreateCheckoutViewModel(currentPage);
 
             foreach (var payment in model.Payments)

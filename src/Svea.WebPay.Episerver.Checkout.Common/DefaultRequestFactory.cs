@@ -1,4 +1,5 @@
-﻿using EPiServer.Commerce.Order;
+﻿using EPiServer.Commerce.Marketing;
+using EPiServer.Commerce.Order;
 using EPiServer.ServiceLocation;
 using EPiServer.Web;
 
@@ -6,6 +7,7 @@ using Mediachase.Commerce;
 using Mediachase.Commerce.Orders.Dto;
 using Mediachase.Commerce.Orders.Managers;
 
+using Svea.WebPay.Episerver.Checkout.Common.Extensions;
 using Svea.WebPay.Episerver.Checkout.Common.Helpers;
 using Svea.WebPay.SDK;
 using Svea.WebPay.SDK.CheckoutApi;
@@ -16,12 +18,12 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using Svea.WebPay.Episerver.Checkout.Common.Extensions;
+
 using OrderRow = Svea.WebPay.SDK.CheckoutApi.OrderRow;
 
 namespace Svea.WebPay.Episerver.Checkout.Common
 {
-    [ServiceConfiguration(typeof(IRequestFactory))]
+	[ServiceConfiguration(typeof(IRequestFactory))]
     public class DefaultRequestFactory : IRequestFactory
     {
         private readonly ICheckoutConfigurationLoader _checkoutConfigurationLoader;
@@ -65,6 +67,7 @@ namespace Svea.WebPay.Episerver.Checkout.Common
                     orderRows.AddRange(GetOrderRowItems(market, orderGroup.Currency, shipment.ShippingAddress, shipment.LineItems));
                     orderRows.Add(GetShippingOrderItem(orderGroup, shipment, market));
                 }
+                orderRows.AddRange(GetPromotions(orderGroupForm.Promotions));
             }
 
             var clientOrderNumber = DateTime.Now.Ticks.ToString();
@@ -96,6 +99,7 @@ namespace Svea.WebPay.Episerver.Checkout.Common
                     orderRows.AddRange(GetOrderRowItems(market, orderGroup.Currency, shipment.ShippingAddress, shipment.LineItems));
                     orderRows.Add(GetShippingOrderItem(orderGroup, shipment, market));
                 }
+                orderRows.AddRange(GetPromotions(orderGroupForm.Promotions));
             }
 
             return new UpdateOrderModel(new SDK.CheckoutApi.Cart(orderRows), merchantData);
@@ -145,6 +149,17 @@ namespace Svea.WebPay.Episerver.Checkout.Common
         public virtual CancelRequest GetCancelRequest()
         {
             return new CancelRequest(true);
+        }
+
+        public virtual IEnumerable<OrderRow> GetPromotions(IList<PromotionInformation> promotions)
+        {
+	        var rowNumber = int.MaxValue;
+
+            return promotions
+	            .Where(promotion => promotion.DiscountType == DiscountType.Order)
+	            .Select(promotion => new OrderRow(promotion.PromotionGuid.ToString(), promotion.Name, MinorUnit.FromInt(1),
+		            MinorUnit.FromDecimal(promotion.SavedAmount * -1), MinorUnit.FromInt(0), MinorUnit.FromInt(0),
+		            "", null, rowNumber--, null));
         }
 
         public virtual IEnumerable<OrderRow> GetOrderRowItems(IMarket market, Currency currency, IOrderAddress shippingAddress, IEnumerable<ILineItem> lineItems)
