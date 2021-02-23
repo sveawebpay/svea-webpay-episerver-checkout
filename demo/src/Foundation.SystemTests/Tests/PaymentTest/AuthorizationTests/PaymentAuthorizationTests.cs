@@ -39,7 +39,7 @@ namespace Foundation.SystemTests.Tests.PaymentTest
             Assert.That(order.OrderStatus, Is.EqualTo(Svea.WebPay.SDK.PaymentAdminApi.OrderStatus.Open));
             Assert.That(order.PaymentType, Is.EqualTo(Svea.WebPay.SDK.PaymentAdminApi.PaymentType.Card));
             Assert.That(order.AvailableActions, Is.EquivalentTo(new List<string> { "CanDeliverOrder", "CanCancelOrder", "CanCancelAmount" }));
-            Assert.That(order.CancelledAmount.Value, Is.EqualTo(0));
+            Assert.That(order.CancelledAmount, Is.EqualTo(0));
 
             Assert.That(order.OrderRows.Count, Is.EqualTo(products.Count() + 1));
 
@@ -47,8 +47,8 @@ namespace Foundation.SystemTests.Tests.PaymentTest
             {
                 var orderRow = order.OrderRows.ElementAt(i);
                 Assert.That(orderRow.Name.ToUpper(), Is.EqualTo(products[i].Name.ToUpper()));
-                Assert.That(orderRow.Quantity.Value, Is.EqualTo(products[i].Quantity * 100));
-                Assert.That(orderRow.UnitPrice.Value, Is.EqualTo((products[i].UnitPrice + products[i].UnitPrice * 0.25m) * 100));
+                Assert.That(orderRow.Quantity, Is.EqualTo(products[i].Quantity));
+                Assert.That(orderRow.UnitPrice, Is.EqualTo((products[i].UnitPrice + products[i].UnitPrice * 0.25m)));
             }
 
             Assert.IsNull(order.Deliveries);
