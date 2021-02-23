@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
@@ -44,7 +44,7 @@
     </PackageReference>
     <PackageReference Include="Selenium.WebDriver" Version="3.141.0" />
     <PackageReference Include="Selenium.WebDriver.ChromeDriver" Version="86.0.4240.2200" />
-    <PackageReference Include="Svea.WebPay.SDK" Version="1.0.0" />
+    <PackageReference Include="Svea.WebPay.SDK" Version="1.1.0-alpha0047" />
   </ItemGroup>
 
 </Project>
