@@ -1,7 +1,7 @@
 # Svea.WebPay.Episerver.Checkout
 
 ## Links
-[Test-Data](https://www.svea.com/globalassets/sweden/foretag/betallosningar/e-handel/integrationspaket-logos-and-doc.-integration-test-instructions-webpay/test-instructions-webpay-partners..pdf), In the documentation it says checkoutID, it's the same as later called MerchantId.  
+[Test-Data](https://www.svea.com/globalassets/sweden/foretag/betallosningar/e-handel/integrationspaket-logos-and-doc.-integration-test-instructions-webpay/testuppgifter-webpay_.pdf), In the documentation it says checkoutID, it's the same as later called MerchantId.  
 [Svea Payment Admin](https://paymentadminstage.svea.com/)  
 [Svea SDK](https://github.com/sveawebpay/svea-sdk-dotnet)
 
