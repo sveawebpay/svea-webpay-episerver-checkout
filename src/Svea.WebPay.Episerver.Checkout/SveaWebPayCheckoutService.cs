@@ -12,6 +12,7 @@ using Svea.WebPay.Episerver.Checkout.Common;
 using Svea.WebPay.SDK.CheckoutApi;
 
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 
@@ -51,7 +52,7 @@ namespace Svea.WebPay.Episerver.Checkout
                                                             ContentLanguage.PreferredCulture.Name, true));
 
 
-        public virtual Data CreateOrUpdateOrder(IOrderGroup orderGroup, CultureInfo currentLanguage)
+        public virtual Data CreateOrUpdateOrder(IOrderGroup orderGroup, CultureInfo currentLanguage, IList<Presetvalue> presetValues = null, IdentityFlags identityFlags = null, Guid? partnerKey = null, string merchantData = null)
         {
 	        var allLineItems = orderGroup.GetAllLineItems();
 	        if(allLineItems == null || !allLineItems.Any())
@@ -61,20 +62,20 @@ namespace Svea.WebPay.Episerver.Checkout
 
             if (long.TryParse(orderGroup.Properties[Constants.SveaWebPayOrderIdField]?.ToString(), out var orderId))
             {
-                return UpdateOrder(orderGroup, currentLanguage, orderId);
+                return UpdateOrder(orderGroup, currentLanguage, orderId, merchantData);
             }
 
-            return CreateOrder(orderGroup, currentLanguage);
+            return CreateOrder(orderGroup, currentLanguage, presetValues, identityFlags, partnerKey, merchantData);
         }
 
-        public virtual Data CreateOrder(IOrderGroup orderGroup, CultureInfo currentLanguage)
+        public virtual Data CreateOrder(IOrderGroup orderGroup, CultureInfo currentLanguage, IList<Presetvalue> presetValues = null, IdentityFlags identityFlags = null, Guid? partnerKey = null, string merchantData = null)
         {
             var market = _currentMarket.GetCurrentMarket();
             var sveaWebPayClient = _sveaWebPayClientFactory.Create(market, currentLanguage.TwoLetterISOLanguageName);
 
             try
             {
-                var orderRequest = _requestFactory.GetOrderRequest(orderGroup, market, PaymentMethodDto, currentLanguage);
+                var orderRequest = _requestFactory.GetOrderRequest(orderGroup, market, PaymentMethodDto, currentLanguage, presetValues, identityFlags, partnerKey, merchantData);
                 var order = AsyncHelper.RunSync(() => sveaWebPayClient.Checkout.CreateOrder(orderRequest));
                 orderGroup.Properties[Constants.Culture] = currentLanguage.TwoLetterISOLanguageName;
                 orderGroup.Properties[Constants.SveaWebPayOrderIdField] = order.OrderId;
@@ -89,7 +90,7 @@ namespace Svea.WebPay.Episerver.Checkout
             }
         }
         
-        public virtual Data UpdateOrder(IOrderGroup orderGroup, CultureInfo currentLanguage, long orderId)
+        public virtual Data UpdateOrder(IOrderGroup orderGroup, CultureInfo currentLanguage, long orderId, string merchantData = null)
         {
             var market = _currentMarket.GetCurrentMarket();
             var sveaWebPayClient = _sveaWebPayClientFactory.Create(market, currentLanguage.TwoLetterISOLanguageName);
@@ -102,7 +103,7 @@ namespace Svea.WebPay.Episerver.Checkout
 
             try
             {
-                var updateOrderRequest = _requestFactory.GetUpdateOrderRequest(orderGroup, market, PaymentMethodDto, currentLanguage);
+                var updateOrderRequest = _requestFactory.GetUpdateOrderRequest(orderGroup, market, PaymentMethodDto, currentLanguage, merchantData);
                 order = AsyncHelper.RunSync(() => sveaWebPayClient.Checkout.UpdateOrder(orderId, updateOrderRequest));
                 orderGroup.Properties[Constants.Culture] = currentLanguage.TwoLetterISOLanguageName;
                 return order;
