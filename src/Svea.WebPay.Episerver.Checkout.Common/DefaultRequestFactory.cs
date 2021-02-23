@@ -114,19 +114,19 @@ namespace Svea.WebPay.Episerver.Checkout.Common
 
         public virtual CreditNewOrderRowRequest GetCreditNewOrderRowRequest(IPayment payment, IShipment shipment, string name, TimeSpan? pollingTimeout = null)
         {
-            var creditOrderRow = new CreditOrderRow(name, MinorUnit.FromDecimal(payment.Amount), MinorUnit.FromDecimal(0)); //TODO VATPercent
+			var creditOrderRow = new CreditOrderRow(name, new MinorUnit(payment.Amount), new MinorUnit(0)); //TODO VATPercent
             var creditNewOrderRowRequest = new CreditNewOrderRowRequest(creditOrderRow, null, pollingTimeout); //TODO: newCreditOrderRows?
             return creditNewOrderRowRequest;
         }
 
         public virtual CreditAmountRequest GetCreditAmountRequest(IPayment payment, IShipment shipment)
         {
-            return new CreditAmountRequest(MinorUnit.FromDecimal(payment.Amount));
+			return new CreditAmountRequest(new MinorUnit(payment.Amount));
         }
 
         public virtual CancelAmountRequest GetCancelAmountRequest(Order paymentOrder, IPayment payment, IShipment shipment)
         {
-            return new CancelAmountRequest(MinorUnit.FromDecimal(MinorUnit.ToDecimal(paymentOrder.CancelledAmount) + payment.Amount));
+			return new CancelAmountRequest(new MinorUnit(paymentOrder.CancelledAmount + payment.Amount));
         }
 
         public virtual DeliveryRequest GetDeliveryRequest(IPayment payment, IMarket market, IShipment shipment, Order paymentOrder, TimeSpan? pollingTimeout = null)
@@ -157,8 +157,8 @@ namespace Svea.WebPay.Episerver.Checkout.Common
 
             return promotions
 	            .Where(promotion => promotion.DiscountType == DiscountType.Order)
-	            .Select(promotion => new OrderRow(promotion.PromotionGuid.ToString(), promotion.Name, MinorUnit.FromInt(1),
-		            MinorUnit.FromDecimal(promotion.SavedAmount * -1), MinorUnit.FromInt(0), MinorUnit.FromInt(0),
+				.Select(promotion => new OrderRow(promotion.PromotionGuid.ToString(), promotion.Name, new MinorUnit(1),
+					new MinorUnit(promotion.SavedAmount * -1), null, new MinorUnit(0),
 		            "", null, rowNumber--, null));
         }
 
@@ -174,13 +174,16 @@ namespace Svea.WebPay.Episerver.Checkout.Common
                         ? itemSalesTex.Amount / (extendedPrice.Amount - itemSalesTex.Amount)
                         : itemSalesTex.Amount / extendedPrice.Amount
                     : 0;
-                var unitSalesTax = item.PlacedPrice * vatPercent;
-                var unitPrice = market.PricesIncludeTax ? item.PlacedPrice : item.PlacedPrice + unitSalesTax;
 
-                var discountPercent = (item.GetEntryDiscount() / (item.GetDiscountedPrice(currency) + item.GetEntryDiscount()));
+				var unitPrice = market.PricesIncludeTax ? item.PlacedPrice : item.PlacedPrice * (1 + vatPercent);
 
-                return new OrderRow(item.Code, item.DisplayName.TrimIfNecessary(40), MinorUnit.FromDecimal(item.Quantity), MinorUnit.FromDecimal(unitPrice),
-                    MinorUnit.FromDecimal(discountPercent * 100), MinorUnit.FromDecimal(vatPercent * 100), "PCS", null, item.LineItemId, null);
+				var entryDiscount = item.GetEntryDiscount();
+				var discountAmount = market.PricesIncludeTax
+					? entryDiscount
+					: entryDiscount * (1 + vatPercent);
+
+				return new OrderRow(item.Code, item.DisplayName.TrimIfNecessary(40), new MinorUnit(item.Quantity), new MinorUnit(unitPrice),
+					new MinorUnit(discountAmount), new MinorUnit(vatPercent * 100), "PCS", null, item.LineItemId, null);
             });
         }
 
@@ -199,11 +202,11 @@ namespace Svea.WebPay.Episerver.Checkout.Common
 
             var unitShippingTax = extendPrice * vatPercent;
             var unitPrice = market.PricesIncludeTax ? extendPrice : extendPrice + unitShippingTax;
-            var discountPercent = extendPrice.Amount > 0 ? (extendPrice.Amount - discountedShippingAmount.Amount) / extendPrice.Amount : 0;
+			var discountAmount = extendPrice - discountedShippingAmount;
 
             var shippingMethodInfoModel = ShippingManager.GetShippingMethod(shipment.ShippingMethodId).ShippingMethod.Single();
-            return new OrderRow("SHIPPING", shippingMethodInfoModel.DisplayName.TrimIfNecessary(40), MinorUnit.FromInt(1), MinorUnit.FromDecimal(unitPrice.Amount),
-                MinorUnit.FromDecimal(discountPercent * 100), MinorUnit.FromDecimal(vatPercent * 100),
+			return new OrderRow("SHIPPING", shippingMethodInfoModel.DisplayName.TrimIfNecessary(40), new MinorUnit(1), new MinorUnit(unitPrice.Amount),
+				new MinorUnit(discountAmount), new MinorUnit(vatPercent * 100),
                 "PCS", null, 999, null);
         }
 
