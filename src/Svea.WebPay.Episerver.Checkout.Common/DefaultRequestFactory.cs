@@ -202,6 +202,7 @@ namespace Svea.WebPay.Episerver.Checkout.Common
 			{
 				orderRowInfos.Add(new OrderRowInfo
 				{
+					ArticleNumber = "DISCOUNT",
 					Type = OrderLineType.Discount,
 					Name = _localizationService.GetString("/svea/orderrow/discount", "Discount"),
 					Quantity = new MinorUnit(1),
@@ -219,7 +220,7 @@ namespace Svea.WebPay.Episerver.Checkout.Common
 			{
 				var orderRowInfo = orderRowInfos[rowNumber];
 				retVal.Add(new OrderRow(orderRowInfo.ArticleNumber.TrimIfNecessary(256), orderRowInfo.Name.TrimIfNecessary(40), orderRowInfo.Quantity, orderRowInfo.UnitPrice, orderRowInfo.TotalDiscountAmount,
-					orderRowInfo.TaxRate, orderRowInfo.QuantityUnit, temporaryReference, rowNumber, merchantData));
+					orderRowInfo.TaxRate, orderRowInfo.QuantityUnit, temporaryReference, rowNumber + 1, merchantData));
 			}
 			return retVal;
 		}
@@ -270,6 +271,7 @@ namespace Svea.WebPay.Episerver.Checkout.Common
 
 				orderRowInfos.Add(new OrderRowInfo
 				{
+					ArticleNumber = "DISCOUNT",
 					Type = OrderLineType.Discount,
 					Name = _localizationService.GetString("/svea/orderrow/discount", "Discount"),
 					Quantity = new MinorUnit(1),
@@ -282,11 +284,11 @@ namespace Svea.WebPay.Episerver.Checkout.Common
 			}
 
 			var retVal = new List<OrderRow>();
-			for (var i = 0; i < orderRowInfos.Count; i++)
+			for (var rowNumber = 0; rowNumber < orderRowInfos.Count; rowNumber++)
 			{
-				var orderRowInfo = orderRowInfos[i];
+				var orderRowInfo = orderRowInfos[rowNumber];
 				retVal.Add(new OrderRow(orderRowInfo.ArticleNumber.TrimIfNecessary(256), orderRowInfo.Name.TrimIfNecessary(40), orderRowInfo.Quantity, orderRowInfo.UnitPrice, orderRowInfo.TotalDiscountAmount,
-					orderRowInfo.TaxRate, orderRowInfo.QuantityUnit, temporaryReference, i, merchantData));
+					orderRowInfo.TaxRate, orderRowInfo.QuantityUnit, temporaryReference, rowNumber + 1, merchantData));
 			}
 			return retVal;
 		}

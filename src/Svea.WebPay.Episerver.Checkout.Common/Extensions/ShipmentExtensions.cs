@@ -51,6 +51,7 @@ namespace Svea.WebPay.Episerver.Checkout.Common.Extensions
 			{
 				Type = OrderLineType.ShippingFee,
 				Name = shipment.ShippingMethodName,
+				ArticleNumber = "SHIPPING",
 				Quantity = new MinorUnit(1),
 				UnitPrice = new MinorUnit(unitPrice),
 				TotalAmount = new MinorUnit(total),
