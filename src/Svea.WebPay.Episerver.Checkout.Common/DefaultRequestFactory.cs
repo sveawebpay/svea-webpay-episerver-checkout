@@ -83,7 +83,7 @@ namespace Svea.WebPay.Episerver.Checkout.Common
 			return GetOrderRows(orderGroup, market, market.PricesIncludeTax, temporaryReference, merchantData);
 		}
 
-		public virtual List<OrderRow> GetOrderRows(IOrderGroup orderGroup, IMarket market, bool includeTaxOnLineItems, string  temporaryReference = null, string merchantData = null) 
+		public virtual List<OrderRow> GetOrderRows(IOrderGroup orderGroup, IMarket market, bool includeTaxOnLineItems, string temporaryReference = null, string merchantData = null)
 		{
 			var orderGroupTotals = _orderGroupCalculator.GetOrderGroupTotals(orderGroup);
 			return includeTaxOnLineItems
@@ -117,18 +117,7 @@ namespace Svea.WebPay.Episerver.Checkout.Common
 
 		public virtual DeliveryRequest GetDeliveryRequest(IPayment payment, IMarket market, IShipment shipment, Order paymentOrder, TimeSpan? pollingTimeout = null)
 		{
-			var lineItemCodes = shipment.LineItems.Select(lineItem => lineItem.Code);
-			var orderRowIds = paymentOrder.OrderRows
-				.Where(row => lineItemCodes.Contains(row.ArticleNumber))
-				.Select(r => Convert.ToInt64(r.OrderRowId))
-				.ToList();
-
-			var shippingOrderRow = paymentOrder.OrderRows.FirstOrDefault(x => x.ArticleNumber == "SHIPPING");
-			if (shippingOrderRow != null)
-			{
-				orderRowIds.Add(Convert.ToInt64(shippingOrderRow.OrderRowId));
-			}
-
+			var orderRowIds = paymentOrder.OrderRows.Select(x => Convert.ToInt64(x.OrderRowId)).ToList();
 			return new DeliveryRequest(orderRowIds, null, pollingTimeout);
 		}
 
