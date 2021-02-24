@@ -4,7 +4,6 @@ using EPiServer.Logging;
 using Foundation.Features.Checkout.Services;
 
 using Svea.WebPay.Episerver.Checkout;
-using Svea.WebPay.Episerver.Checkout.Common;
 using Svea.WebPay.SDK.CheckoutApi;
 
 using System.Linq;
@@ -14,7 +13,7 @@ using System.Web.Http.Results;
 
 namespace Foundation.Features.Checkout
 {
-    [RoutePrefix("api/sveawebpay")]
+	[RoutePrefix("api/sveawebpay")]
     public class SveaWebPayCheckoutController : ApiController
     {
         private readonly ICartService _cartService;
@@ -61,54 +60,13 @@ namespace Foundation.Features.Checkout
         [Route("push/{orderGroupId}/{orderId?}")]
         public IHttpActionResult Push(int orderGroupId, long orderId)
         {
-            var purchaseOrder = GetOrCreatePurchaseOrder(orderGroupId, orderId, out var status);
+            var purchaseOrder = _checkoutService.GetOrCreatePurchaseOrder(orderGroupId, orderId, out var status);
             if (purchaseOrder == null)
             {
                 return new StatusCodeResult(status, this);
             }
 
             return new StatusCodeResult(status, this);
-        }
-
-        private IPurchaseOrder GetOrCreatePurchaseOrder(int orderGroupId, long sveaWebPayOrderId, out HttpStatusCode status)
-        {
-            // Check if the order has been created already
-            var purchaseOrder = _sveaWebPayCheckoutService.GetPurchaseOrderBySveaWebPayOrderId(sveaWebPayOrderId.ToString());
-            if (purchaseOrder != null)
-            {
-                status = HttpStatusCode.OK;
-                return purchaseOrder;
-            }
-
-            // Check if we still have a cart and can create an order
-            var cart = _orderRepository.Load<ICart>(orderGroupId);
-            if (cart == null)
-            {
-                _log.Log(Level.Information, $"Purchase order or cart with orderId {orderGroupId} not found");
-                status = HttpStatusCode.NotFound;
-                return null;
-            }
-
-            var cartSveaWebPayOrderId = cart.Properties[Constants.SveaWebPayOrderIdField]?.ToString();
-            if (cartSveaWebPayOrderId == null || !cartSveaWebPayOrderId.Equals(sveaWebPayOrderId.ToString()))
-            {
-                _log.Log(Level.Information, $"cart: {orderGroupId} with svea webpay order id {cartSveaWebPayOrderId} does not equal svea webpay order id {sveaWebPayOrderId} sent in the request");
-                status = HttpStatusCode.Conflict;
-                return null;
-            }
-
-            var order = _sveaWebPayCheckoutService.GetOrder(cart);
-            if (!order.Status.Equals(CheckoutOrderStatus.Final))
-            {
-                // Won't create order, Svea webpay checkout not complete
-                _log.Log(Level.Information, $"Svea webpay order id {cartSveaWebPayOrderId} not completed");
-                status = HttpStatusCode.NotFound;
-                return null;
-            }
-
-            purchaseOrder = _checkoutService.CreatePurchaseOrderForSveaWebPay(sveaWebPayOrderId, order, cart);
-            status = HttpStatusCode.OK;
-            return purchaseOrder;
         }
     }
 }
