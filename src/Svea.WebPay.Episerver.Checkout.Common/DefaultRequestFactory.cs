@@ -1,11 +1,10 @@
-﻿using EPiServer.Commerce.Marketing;
-using EPiServer.Commerce.Order;
+﻿using EPiServer.Commerce.Order;
+using EPiServer.Framework.Localization;
 using EPiServer.ServiceLocation;
 using EPiServer.Web;
 
 using Mediachase.Commerce;
 using Mediachase.Commerce.Orders.Dto;
-using Mediachase.Commerce.Orders.Managers;
 
 using Svea.WebPay.Episerver.Checkout.Common.Extensions;
 using Svea.WebPay.Episerver.Checkout.Common.Helpers;
@@ -27,24 +26,20 @@ namespace Svea.WebPay.Episerver.Checkout.Common
 	public class DefaultRequestFactory : IRequestFactory
 	{
 		private readonly ICheckoutConfigurationLoader _checkoutConfigurationLoader;
+		private readonly LocalizationService _localizationService;
 		private readonly IOrderGroupCalculator _orderGroupCalculator;
-		private readonly IShippingCalculator _shippingCalculator;
-
-		private readonly IReturnLineItemCalculator _returnLineItemCalculator;
 
 		public DefaultRequestFactory(
 			ICheckoutConfigurationLoader checkoutConfigurationLoader,
-			IOrderGroupCalculator orderGroupCalculator,
-			IShippingCalculator shippingCalculator,
-			IReturnLineItemCalculator returnLineItemCalculator)
+			LocalizationService localizationService,
+			IOrderGroupCalculator orderGroupCalculator)
 		{
 			_checkoutConfigurationLoader = checkoutConfigurationLoader ?? throw new ArgumentNullException(nameof(checkoutConfigurationLoader));
+			_localizationService = localizationService;
 			_orderGroupCalculator = orderGroupCalculator;
-			_shippingCalculator = shippingCalculator;
-			_returnLineItemCalculator = returnLineItemCalculator;
 		}
 
-		public virtual CreateOrderModel GetOrderRequest(IOrderGroup orderGroup, IMarket market, PaymentMethodDto paymentMethodDto, CultureInfo currentLanguage, IList<Presetvalue> presetValues = null, IdentityFlags identityFlags = null, Guid? partnerKey = null, string merchantData = null)
+		public virtual CreateOrderModel GetOrderRequest(IOrderGroup orderGroup, IMarket market, PaymentMethodDto paymentMethodDto, CultureInfo currentLanguage, bool includeTaxOnLineItems, string temporaryReference = null, IList<Presetvalue> presetValues = null, IdentityFlags identityFlags = null, Guid? partnerKey = null, string merchantData = null)
 		{
 			if (orderGroup == null)
 			{
@@ -57,18 +52,7 @@ namespace Svea.WebPay.Episerver.Checkout.Common
 			}
 
 			var configuration = _checkoutConfigurationLoader.GetConfiguration(market.MarketId, currentLanguage.TwoLetterISOLanguageName);
-
-			List<OrderRow> orderRows = new List<OrderRow>();
-			foreach (var orderGroupForm in orderGroup.Forms)
-			{
-				foreach (var shipment in orderGroupForm.Shipments)
-				{
-					orderRows.AddRange(GetOrderRowItems(market, orderGroup.Currency, shipment.ShippingAddress, shipment.LineItems));
-					orderRows.Add(GetShippingOrderItem(orderGroup, shipment, market));
-				}
-				orderRows.AddRange(GetPromotions(orderGroupForm.Promotions));
-			}
-
+			var orderRows = GetOrderRows(orderGroup, market, includeTaxOnLineItems, temporaryReference, merchantData);
 			var clientOrderNumber = DateTime.Now.Ticks.ToString();
 
 			return new CreateOrderModel(new RegionInfo(CountryCodeHelper.GetTwoLetterCountryCode(market.MarketId.Value)), new CurrencyCode(orderGroup.Currency.CurrencyCode),
@@ -78,7 +62,7 @@ namespace Svea.WebPay.Episerver.Checkout.Common
 		}
 
 		public virtual UpdateOrderModel GetUpdateOrderRequest(IOrderGroup orderGroup, IMarket market, PaymentMethodDto paymentMethodDto,
-			CultureInfo currentLanguage, string merchantData = null)
+			CultureInfo currentLanguage, bool includeTaxOnLineItems, string temporaryReference = null, string merchantData = null)
 		{
 			if (orderGroup == null)
 			{
@@ -90,18 +74,21 @@ namespace Svea.WebPay.Episerver.Checkout.Common
 				throw new ArgumentNullException(nameof(market));
 			}
 
-			List<OrderRow> orderRows = new List<OrderRow>();
-			foreach (var orderGroupForm in orderGroup.Forms)
-			{
-				foreach (var shipment in orderGroupForm.Shipments)
-				{
-					orderRows.AddRange(GetOrderRowItems(market, orderGroup.Currency, shipment.ShippingAddress, shipment.LineItems));
-					orderRows.Add(GetShippingOrderItem(orderGroup, shipment, market));
-				}
-				orderRows.AddRange(GetPromotions(orderGroupForm.Promotions));
-			}
+			var orderRows = GetOrderRows(orderGroup, market, includeTaxOnLineItems, temporaryReference, merchantData);
+			return new UpdateOrderModel(new Cart(orderRows), merchantData);
+		}
 
-			return new UpdateOrderModel(new SDK.CheckoutApi.Cart(orderRows), merchantData);
+		public virtual List<OrderRow> GetOrderRows(IOrderGroup orderGroup, IMarket market, string temporaryReference = null, string merchantData = null)
+		{
+			return GetOrderRows(orderGroup, market, market.PricesIncludeTax, temporaryReference, merchantData);
+		}
+
+		public virtual List<OrderRow> GetOrderRows(IOrderGroup orderGroup, IMarket market, bool includeTaxOnLineItems, string  temporaryReference = null, string merchantData = null) 
+		{
+			var orderGroupTotals = _orderGroupCalculator.GetOrderGroupTotals(orderGroup);
+			return includeTaxOnLineItems
+				? GetOrderRowsWithTax(orderGroup, market, orderGroupTotals, temporaryReference, merchantData)
+				: GetOrderRowsWithoutTax(orderGroup, orderGroupTotals, temporaryReference, merchantData);
 		}
 
 		public virtual CreditOrderRowsRequest GetCreditOrderRowsRequest(Order paymentOrder, IPayment payment, IEnumerable<ILineItem> lineItems, IMarket market, IShipment shipment, TimeSpan? pollingTimeout = null)
@@ -150,65 +137,6 @@ namespace Svea.WebPay.Episerver.Checkout.Common
 			return new CancelRequest(true);
 		}
 
-		public virtual IEnumerable<OrderRow> GetPromotions(IList<PromotionInformation> promotions)
-		{
-			var rowNumber = int.MaxValue;
-
-			return promotions
-				.Where(promotion => promotion.DiscountType == DiscountType.Order)
-				.Select(promotion => new OrderRow(promotion.PromotionGuid.ToString(), promotion.Name, new MinorUnit(1),
-					new MinorUnit(promotion.SavedAmount * -1), null, new MinorUnit(0),
-					"", null, rowNumber--, null));
-		}
-
-		public virtual IEnumerable<OrderRow> GetOrderRowItems(IMarket market, Currency currency, IOrderAddress shippingAddress, IEnumerable<ILineItem> lineItems)
-		{
-			return lineItems.Select(item =>
-			{
-				var extendedPrice = item.ReturnQuantity > 0 ? _returnLineItemCalculator.GetExtendedPrice(item as IReturnLineItem, currency) : item.GetExtendedPrice(currency);
-
-				var itemSalesTex = item.GetSalesTax(market, currency, shippingAddress);
-				var vatPercent = extendedPrice.Amount > 0
-					? market.PricesIncludeTax
-						? itemSalesTex.Amount / (extendedPrice.Amount - itemSalesTex.Amount)
-						: itemSalesTex.Amount / extendedPrice.Amount
-					: 0;
-
-				var unitPrice = market.PricesIncludeTax ? item.PlacedPrice : item.PlacedPrice * (1 + vatPercent);
-
-				var entryDiscount = item.GetEntryDiscount();
-				var discountAmount = market.PricesIncludeTax
-					? entryDiscount
-					: entryDiscount * (1 + vatPercent);
-
-				return new OrderRow(item.Code, item.DisplayName.TrimIfNecessary(40), new MinorUnit(item.Quantity), new MinorUnit(unitPrice),
-					new MinorUnit(discountAmount), new MinorUnit(vatPercent * 100), "PCS", null, item.LineItemId, null);
-			});
-		}
-
-		public virtual OrderRow GetShippingOrderItem(IOrderGroup orderGroup, IShipment shipment, IMarket market)
-		{
-			var currency = shipment.ParentOrderGroup.Currency;
-			var extendPrice = _orderGroupCalculator.GetShippingSubTotal(orderGroup);
-			var discountedShippingAmount = _shippingCalculator.GetDiscountedShippingAmount(shipment, market, currency);
-
-			var shippingTax = _shippingCalculator.GetShippingTax(shipment, market, currency);
-			var vatPercent = discountedShippingAmount > 0
-				? market.PricesIncludeTax
-					? shippingTax.Amount / (discountedShippingAmount - shippingTax.Amount)
-					: shippingTax.Amount / discountedShippingAmount
-				: 0;
-
-			var unitShippingTax = extendPrice * vatPercent;
-			var unitPrice = market.PricesIncludeTax ? extendPrice : extendPrice + unitShippingTax;
-			var discountAmount = extendPrice - discountedShippingAmount;
-
-			var shippingMethodInfoModel = ShippingManager.GetShippingMethod(shipment.ShippingMethodId).ShippingMethod.Single();
-			return new OrderRow("SHIPPING", shippingMethodInfoModel.DisplayName.TrimIfNecessary(40), new MinorUnit(1), new MinorUnit(unitPrice.Amount),
-				new MinorUnit(discountAmount), new MinorUnit(vatPercent * 100),
-				"PCS", null, 999, null);
-		}
-
 		private MerchantSettings GetMerchantSettings(CheckoutConfiguration checkoutConfiguration, IOrderGroup orderGroup, string payeeReference)
 		{
 			Uri ToFullSiteUrl(Func<CheckoutConfiguration, Uri> fieldSelector)
@@ -227,5 +155,141 @@ namespace Svea.WebPay.Episerver.Checkout.Common
 				ToFullSiteUrl(c => c.CheckoutUri), ToFullSiteUrl(c => c.ConfirmationUri),
 				ToFullSiteUrl(c => c.CheckoutValidationCallbackUri), checkoutConfiguration.ActivePartPaymentCampaigns, checkoutConfiguration.PromotedPartPaymentCampaign);
 		}
+
+
+		private List<OrderRow> GetOrderRowsWithoutTax(IOrderGroup orderGroup, OrderGroupTotals orderGroupTotals, string temporaryReference = null, string merchantData = null)
+		{
+			var orderRowInfos = new List<OrderRowInfo>();
+
+			// Line items
+			foreach (var lineItem in orderGroup.GetAllLineItems())
+			{
+				var orderLine = lineItem.GetOrderRow();
+				orderRowInfos.Add(orderLine);
+			}
+
+			// Shipment
+			if (orderGroupTotals.ShippingTotal.Amount > 0)
+			{
+				foreach (var form in orderGroup.Forms)
+				{
+					foreach (var shipment in form.Shipments)
+					{
+						var shipmentOrderLine = shipment.GetOrderRow(orderGroup, false);
+						orderRowInfos.Add(shipmentOrderLine);
+					}
+				}
+			}
+
+			// Sales tax
+			orderRowInfos.Add(new OrderRowInfo
+			{
+				Type = OrderLineType.SalesTax,
+				Name = "Sales Tax",
+				Quantity = new MinorUnit(1),
+				TotalAmount = new MinorUnit(orderGroupTotals.TaxTotal),
+				UnitPrice = new MinorUnit(orderGroupTotals.TaxTotal),
+				TotalTaxAmount = new MinorUnit(0),
+				TaxRate = new MinorUnit(0)
+			});
+
+			// Order level discounts
+			var orderDiscount = orderGroup.GetOrderDiscountTotal();
+
+			var totalDiscount = orderDiscount.Amount;
+
+			if (totalDiscount > 0)
+			{
+				orderRowInfos.Add(new OrderRowInfo
+				{
+					Type = OrderLineType.Discount,
+					Name = _localizationService.GetString("/svea/orderrow/discount", "Discount"),
+					Quantity = new MinorUnit(1),
+					TotalAmount = -new MinorUnit(totalDiscount),
+					UnitPrice = -new MinorUnit(totalDiscount),
+					TotalTaxAmount = new MinorUnit(0),
+					TaxRate = new MinorUnit(0),
+					QuantityUnit = _localizationService.GetString("/svea/orderrow/discountpcs", "pcs")
+				});
+			}
+
+
+			var retVal = new List<OrderRow>();
+			for (var rowNumber = 0; rowNumber < orderRowInfos.Count; rowNumber++)
+			{
+				var orderRowInfo = orderRowInfos[rowNumber];
+				retVal.Add(new OrderRow(orderRowInfo.ArticleNumber.TrimIfNecessary(256), orderRowInfo.Name.TrimIfNecessary(40), orderRowInfo.Quantity, orderRowInfo.UnitPrice, orderRowInfo.TotalDiscountAmount,
+					orderRowInfo.TaxRate, orderRowInfo.QuantityUnit, temporaryReference, rowNumber, merchantData));
+			}
+			return retVal;
+		}
+
+		private List<OrderRow> GetOrderRowsWithTax(IOrderGroup orderGroup, IMarket market, OrderGroupTotals orderGroupTotals, string temporaryReference = null, string merchantData = null)
+		{
+			var orderRowInfos = new List<OrderRowInfo>();
+
+			// Line items
+			foreach (var lineItem in orderGroup.GetAllLineItems())
+			{
+				var orderRow = lineItem.GetOrderRowWithTax(market, orderGroup.GetFirstShipment(), orderGroup.Currency);
+				orderRowInfos.Add(orderRow);
+			}
+
+			// Shipment
+			if (orderGroupTotals.ShippingTotal.Amount > 0)
+			{
+				foreach (var form in orderGroup.Forms)
+				{
+					foreach (var shipment in form.Shipments)
+					{
+						var shipmentOrderLine = shipment.GetOrderRow(orderGroup, true);
+						orderRowInfos.Add(shipmentOrderLine);
+					}
+				}
+			}
+
+			// Without tax
+			var orderLevelDiscount = new MinorUnit(orderGroup.GetOrderDiscountTotal());
+			if (orderLevelDiscount > 0)
+			{
+				// Order level discounts with tax
+				var totalOrderAmountWithoutDiscount = orderRowInfos.Sum(x => x.TotalAmount);
+				var totalOrderAmountWithDiscount = orderGroupTotals.Total.Amount;
+				var orderLevelDiscountIncludingTax = totalOrderAmountWithoutDiscount - totalOrderAmountWithDiscount;
+
+				// Tax
+				var totalTaxAmountWithoutDiscount = orderRowInfos.Sum(x => x.TotalTaxAmount);
+				var totalTaxAmountWithDiscount = orderGroupTotals.TaxTotal;
+				var discountTax = totalTaxAmountWithoutDiscount - totalTaxAmountWithDiscount;
+
+				var orderLevelDiscountExcludingTax = market.PricesIncludeTax
+					? orderLevelDiscount - discountTax
+					: orderLevelDiscount;
+
+				var taxRate = discountTax * 100 / orderLevelDiscountExcludingTax;
+
+				orderRowInfos.Add(new OrderRowInfo
+				{
+					Type = OrderLineType.Discount,
+					Name = _localizationService.GetString("/svea/orderrow/discount", "Discount"),
+					Quantity = new MinorUnit(1),
+					TotalAmount = new MinorUnit(orderLevelDiscountIncludingTax * -1),
+					UnitPrice = new MinorUnit(orderLevelDiscountIncludingTax * -1),
+					TotalTaxAmount = new MinorUnit(discountTax * -1),
+					TaxRate = new MinorUnit(taxRate),
+					QuantityUnit = _localizationService.GetString("/svea/orderrow/discountpcs", "pcs")
+				});
+			}
+
+			var retVal = new List<OrderRow>();
+			for (var i = 0; i < orderRowInfos.Count; i++)
+			{
+				var orderRowInfo = orderRowInfos[i];
+				retVal.Add(new OrderRow(orderRowInfo.ArticleNumber.TrimIfNecessary(256), orderRowInfo.Name.TrimIfNecessary(40), orderRowInfo.Quantity, orderRowInfo.UnitPrice, orderRowInfo.TotalDiscountAmount,
+					orderRowInfo.TaxRate, orderRowInfo.QuantityUnit, temporaryReference, i, merchantData));
+			}
+			return retVal;
+		}
+
 	}
 }
