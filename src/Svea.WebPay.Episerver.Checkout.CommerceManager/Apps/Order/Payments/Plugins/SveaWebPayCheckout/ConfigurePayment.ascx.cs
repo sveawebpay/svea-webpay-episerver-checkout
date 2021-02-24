@@ -95,10 +95,10 @@ namespace Svea.WebPay.Episerver.Checkout.CommerceManager.Apps.Order.Payments.Plu
                 configuration.CheckoutValidationCallbackUri =
                     !string.IsNullOrWhiteSpace(txtCheckoutValidationCallbackUri.Text) ? new Uri(txtCheckoutValidationCallbackUri.Text) : null;
 
-                configuration.ActivePartPaymentCampaigns = txtActivePartPaymentCampaigns.Text?.Split(';')
-                    .Select(long.Parse).ToList();
+                configuration.ActivePartPaymentCampaigns = txtActivePartPaymentCampaigns.Text
+	                ?.Split(new[] {';'}, StringSplitOptions.RemoveEmptyEntries).Select(long.Parse).ToList();
 
-                if(long.TryParse(txtPromotedPartPaymentCampaign.Text, out long promotedPartPaymentCampaign))
+                if (long.TryParse(txtPromotedPartPaymentCampaign.Text, out long promotedPartPaymentCampaign))
                 {
                     configuration.PromotedPartPaymentCampaign = promotedPartPaymentCampaign;
                 }
@@ -106,6 +106,8 @@ namespace Svea.WebPay.Episerver.Checkout.CommerceManager.Apps.Order.Payments.Plu
                 {
                     configuration.PromotedPartPaymentCampaign = null;
                 }
+
+                configuration.RequireElectronicIdAuthentication = chkRequireElectronicIdAuthentication.Checked;
             }
             catch (Exception)
             {
@@ -153,6 +155,7 @@ namespace Svea.WebPay.Episerver.Checkout.CommerceManager.Apps.Order.Payments.Plu
                     ? string.Join(";", checkoutConfiguration.ActivePartPaymentCampaigns)
                     : null;
             txtPromotedPartPaymentCampaign.Text = checkoutConfiguration.PromotedPartPaymentCampaign.ToString();
+            chkRequireElectronicIdAuthentication.Checked = checkoutConfiguration.RequireElectronicIdAuthentication;
         }
 
 

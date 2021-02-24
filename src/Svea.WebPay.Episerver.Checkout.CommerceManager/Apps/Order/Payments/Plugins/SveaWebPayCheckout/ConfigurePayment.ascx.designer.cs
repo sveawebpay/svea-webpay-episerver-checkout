@@ -247,5 +247,14 @@ namespace Svea.WebPay.Episerver.Checkout.CommerceManager.Apps.Order.Payments.Plu
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.TextBox txtPromotedPartPaymentCampaign;
+
+        /// <summary>
+        /// chkRequireElectronicIdAuthentication control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.CheckBox chkRequireElectronicIdAuthentication;
     }
 }

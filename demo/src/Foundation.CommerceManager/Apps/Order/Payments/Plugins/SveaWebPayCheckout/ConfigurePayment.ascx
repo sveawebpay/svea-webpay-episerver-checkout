@@ -219,6 +219,16 @@
                                 <asp:TextBox runat="server" ID="txtPromotedPartPaymentCampaign" CssClass="sveawebpaypayment-parameters-url" />
                             </td>
                         </tr>
+					
+						<tr>
+							<td class="FormLabelCell">
+								<p>Require electronic ID authentication: </p>
+								<i></i>
+							</td>
+							<td class="FormFieldCell">
+								<asp:CheckBox runat="server" ID="chkRequireElectronicIdAuthentication" CssClass="" />
+							</td>
+						</tr>
                     </tbody>
 				</table>
 			</asp:Panel>
