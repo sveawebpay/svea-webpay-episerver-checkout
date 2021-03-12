@@ -9,7 +9,8 @@ using Svea.WebPay.Episerver.Checkout.OrderManagement.Extensions;
 
 using System;
 using System.Linq;
-
+using Svea.WebPay.Episerver.Checkout.Common.Helpers;
+using Svea.WebPay.SDK.PaymentAdminApi;
 using TransactionType = Mediachase.Commerce.Orders.TransactionType;
 
 namespace Svea.WebPay.Episerver.Checkout.OrderManagement.Steps
@@ -39,16 +40,18 @@ namespace Svea.WebPay.Episerver.Checkout.OrderManagement.Steps
                     if (long.TryParse(orderGroup.Properties[Constants.SveaWebPayOrderIdField]?.ToString(), out var orderId))
                     {
                         var order = AsyncHelper.RunSync(() => SveaWebPayClient.PaymentAdmin.GetOrder(orderId));
-                        if (order.Actions.Cancel == null)
+                        var (isValid, errorMessage) = ActionsValidationHelper.ValidateOrderAction(order, OrderActionType.CanCancelOrder);
+                        if (!isValid)
                         {
-                            AddNoteAndSaveChanges(orderGroup, payment.TransactionType, $"Cancel is not possible on this order {orderId}");
+	                        AddNoteAndSaveChanges(orderGroup, payment.TransactionType, errorMessage);
+                            AddNoteAndSaveChanges(orderGroup, payment.TransactionType, $"Cancel is not possible on this order: {orderId}");
                             return paymentStepResult;
                         }
 
                         var cancelRequest = _requestFactory.GetCancelRequest();
                         AsyncHelper.RunSync(() => order.Actions.Cancel(cancelRequest));
                         payment.Status = PaymentStatus.Processed.ToString();
-                        AddNoteAndSaveChanges(orderGroup, payment.TransactionType, "Order cancelled at Svea WebPay");
+                        AddNoteAndSaveChanges(orderGroup, payment.TransactionType, $"Payment {orderId} has been cancelled at Svea WebPay");
                         return paymentStepResult;
 
                     }
