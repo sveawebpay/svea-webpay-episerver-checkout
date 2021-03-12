@@ -1,86 +1,85 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
+
 using Svea.WebPay.SDK.PaymentAdminApi.Models;
 
 namespace Svea.WebPay.Episerver.Checkout.Common.Helpers
 {
 	public static class ActionsValidationHelper
-    {
-	    public static string ValidateOrderAction(Order order, string orderAction)
-	    {
-		    if (order == null)
-		    {
-			    return "Payment Order does not exist";
-		    }
+	{
+		public static Tuple<bool, string> ValidateOrderAction(Order order, string orderAction)
+		{
+			if (order == null)
+			{
+				return Tuple.Create(false, "Payment Order does not exist");
+			}
 
-		    if (orderAction == null)
-		    {
-			    return null;
-		    }
+			if (orderAction == null)
+			{
+				return Tuple.Create(true, (string)null);
+			}
 
-		    if (!order.AvailableActions.Contains(orderAction))
-		    {
-			    return "Operation not available";
-		    }
+			if (!order.AvailableActions.Contains(orderAction))
+			{
+				return Tuple.Create(false, $"Operation {orderAction} not available");
+			}
 
-		    return null;
-	    }
+			return Tuple.Create(true, (string)null);
+		}
 
-	    public static string ValidateOrderRowAction(Order order, long orderRowId, string orderRowAction)
-	    {
-		    var orderError = ValidateOrderAction(order, null);
+		public static Tuple<bool, string> ValidateOrderRowAction(Order order, long orderRowId, string orderRowAction)
+		{
+			var validateOrderAction = ValidateOrderAction(order, null);
+			if (!validateOrderAction.Item1)
+			{
+				return validateOrderAction;
+			}
 
-		    if (orderError != null)
-		    {
-			    return orderError;
-		    }
+			var orderRow = order.OrderRows.FirstOrDefault(row => row.OrderRowId == orderRowId);
+			if (orderRow == null)
+			{
+				return Tuple.Create(false, $"Order row {orderRowId} does not exist");
+			}
 
-		    var orderRow = order.OrderRows.FirstOrDefault(row => row.OrderRowId == orderRowId);
+			if (orderRowAction == null)
+			{
+				return Tuple.Create(true, (string)null);
+			}
 
-		    if (orderRow == null)
-		    {
-			    return "Order row does not exist";
-		    }
+			if (!orderRow.AvailableActions.Contains(orderRowAction))
+			{
+				return Tuple.Create(false, $"Operation {orderRowAction} not available");
+			}
 
-		    if (orderRowAction == null)
-		    {
-			    return null;
-		    }
+			return Tuple.Create(true, (string)null);
+		}
 
-		    if (!orderRow.AvailableActions.Contains(orderRowAction))
-		    {
-			    return "Operation not available";
-		    }
+		public static Tuple<bool, string> ValidateDeliveryAction(Order order, long deliveryId, string deliveryAction)
+		{
+			var validateOrderAction = ValidateOrderAction(order, null);
+			if (!validateOrderAction.Item1)
+			{
+				return validateOrderAction;
+			}
 
-		    return null;
-	    }
+			var delivery = order.Deliveries.FirstOrDefault(dlv => dlv.Id == deliveryId);
 
-	    public static string ValidateDeliveryAction(Order order, long deliveryId, string deliveryAction)
-	    {
-		    var orderError = ValidateOrderAction(order, null);
+			if (delivery == null)
+			{
+				return Tuple.Create(false, $"Delivery {deliveryId} does not exist");
+			}
 
-		    if (orderError != null)
-		    {
-			    return orderError;
-		    }
+			if (deliveryAction == null)
+			{
+				return Tuple.Create(true, (string)null);
+			}
 
-		    var delivery = order.Deliveries.FirstOrDefault(dlv => dlv.Id == deliveryId);
+			if (!delivery.AvailableActions.Contains(deliveryAction))
+			{
+				return Tuple.Create(false, $"Operation {deliveryAction} not available");
+			}
 
-		    if (delivery == null)
-		    {
-			    return "Order row does not exist";
-		    }
-
-		    if (deliveryAction == null)
-		    {
-			    return null;
-		    }
-
-		    if (!delivery.AvailableActions.Contains(deliveryAction))
-		    {
-			    return "Operation not available";
-		    }
-
-		    return null;
-	    }
+			return Tuple.Create(true, (string)null);
+		}
 	}
 }
