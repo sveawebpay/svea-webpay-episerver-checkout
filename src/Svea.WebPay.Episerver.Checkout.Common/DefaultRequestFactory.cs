@@ -4,6 +4,7 @@ using EPiServer.ServiceLocation;
 using EPiServer.Web;
 
 using Mediachase.Commerce;
+using Mediachase.Commerce.Orders;
 using Mediachase.Commerce.Orders.Dto;
 
 using Svea.WebPay.Episerver.Checkout.Common.Extensions;
@@ -17,7 +18,8 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-
+using Svea.WebPay.SDK.PaymentAdminApi;
+using Cart = Svea.WebPay.SDK.CheckoutApi.Cart;
 using OrderRow = Svea.WebPay.SDK.CheckoutApi.OrderRow;
 
 namespace Svea.WebPay.Episerver.Checkout.Common
@@ -91,17 +93,24 @@ namespace Svea.WebPay.Episerver.Checkout.Common
 				: GetOrderRowsWithoutTax(orderGroup, orderGroupTotals, temporaryReference, merchantData);
 		}
 
-		public virtual CreditOrderRowsRequest GetCreditOrderRowsRequest(Order paymentOrder, IPayment payment, IEnumerable<ILineItem> lineItems, IMarket market, IShipment shipment, TimeSpan? pollingTimeout = null)
+		public virtual CreditOrderRowsRequest GetCreditOrderRowsRequest(Delivery delivery, IShipment shipment, TimeSpan? pollingTimeout = null)
 		{
-			var orderRows = paymentOrder.OrderRows.Where(x => lineItems.Any(lineItem => lineItem.Code == x.ArticleNumber));
-			var orderRowIds = orderRows.Select(row => Convert.ToInt64(row.OrderRowId)).ToList();
-			return new CreditOrderRowsRequest(orderRowIds, pollingTimeout);
+			var creditOrderRows = shipment.LineItems.Select(lineItem => delivery.OrderRows.FirstOrDefault(x => x.ArticleNumber == lineItem.Code)).Where(orderRow => orderRow != null && orderRow.AvailableActions.Contains(OrderRowActionType.CanCreditRow)).ToList();
+			var orderRowIds = creditOrderRows.Select(x => (long) x.OrderRowId).ToList();
+			return new CreditOrderRowsRequest(orderRowIds, null, pollingTimeout);
 		}
 
-		public virtual CreditNewOrderRowRequest GetCreditNewOrderRowRequest(IPayment payment, IShipment shipment, string name, TimeSpan? pollingTimeout = null)
+		public virtual CreditNewOrderRowRequest GetCreditNewOrderRowRequest(OrderForm orderForm, IPayment payment, IShipment shipment, IMarket market, string name, TimeSpan? pollingTimeout = null)
 		{
-			var creditOrderRow = new CreditOrderRow(name, new MinorUnit(payment.Amount), new MinorUnit(0)); //TODO VATPercent
-			var creditNewOrderRowRequest = new CreditNewOrderRowRequest(creditOrderRow, null, pollingTimeout); //TODO: newCreditOrderRows?
+			var lineItemTaxCalculator = ServiceLocator.Current.GetInstance<ILineItemTaxCalculator>();
+			var taxValues = lineItemTaxCalculator.GetTaxValuesForLineItem(shipment.LineItems.First(), market, shipment);
+			var taxPercentage = taxValues
+				.Where(x => x.TaxType == TaxType.SalesTax)
+				.Sum(x => (decimal)x.Percentage);
+
+			var creditOrderRow = new CreditOrderRow(name, new MinorUnit(payment.Amount), new MinorUnit(taxPercentage));
+
+			var creditNewOrderRowRequest = new CreditNewOrderRowRequest(creditOrderRow, null, pollingTimeout);
 			return creditNewOrderRowRequest;
 		}
 
@@ -118,7 +127,7 @@ namespace Svea.WebPay.Episerver.Checkout.Common
 		public virtual DeliveryRequest GetDeliveryRequest(IPayment payment, IMarket market, IShipment shipment, Order paymentOrder, TimeSpan? pollingTimeout = null)
 		{
 			var orderRowIds = paymentOrder.OrderRows.Select(x => Convert.ToInt64(x.OrderRowId)).ToList();
-			return new DeliveryRequest(orderRowIds, null, pollingTimeout);
+			return new DeliveryRequest(orderRowIds, null, null, pollingTimeout);
 		}
 
 		public virtual CancelRequest GetCancelRequest()
