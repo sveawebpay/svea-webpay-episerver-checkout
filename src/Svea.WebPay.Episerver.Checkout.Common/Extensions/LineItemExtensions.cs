@@ -34,7 +34,7 @@ namespace Svea.WebPay.Episerver.Checkout.Common.Extensions
 			IShipment shipment,
 			Currency currency)
 		{
-			var prices = GetPrices(lineItem, market, shipment, currency);
+			var prices = lineItem.GetPrices(market, shipment, currency);
 			return GetOrderRow(
 				lineItem,
 				prices.UnitPrice,
@@ -80,7 +80,7 @@ namespace Svea.WebPay.Episerver.Checkout.Common.Extensions
 			return orderLine;
 		}
 
-		public static Prices GetPrices(ILineItem lineItem, IMarket market, IShipment shipment, Currency currency)
+		public static Prices GetPrices(this ILineItem lineItem, IMarket market, IShipment shipment, Currency currency)
 		{
 			var taxType = TaxType.SalesTax;
 
