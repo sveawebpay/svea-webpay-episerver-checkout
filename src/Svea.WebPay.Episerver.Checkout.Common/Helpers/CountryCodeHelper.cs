@@ -1,8 +1,6 @@
 ﻿using EPiServer.Personalization;
 using EPiServer.ServiceLocation;
 
-using ISO3166;
-
 using System;
 using System.Collections.Generic;
 using System.Linq;
