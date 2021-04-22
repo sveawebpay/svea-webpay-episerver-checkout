@@ -766,7 +766,7 @@
       <HintPath>..\..\packages\structuremap.web.4.0.0.315\lib\net40\StructureMap.Web.dll</HintPath>
     </Reference>
     <Reference Include="Svea.WebPay.SDK, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Svea.WebPay.SDK.1.1.0-alpha0057\lib\netstandard2.0\Svea.WebPay.SDK.dll</HintPath>
+      <HintPath>..\..\packages\Svea.WebPay.SDK.1.1.0-alpha0066\lib\netstandard2.0\Svea.WebPay.SDK.dll</HintPath>
     </Reference>
     <Reference Include="System.Buffers, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\..\packages\System.Buffers.4.5.1\lib\net461\System.Buffers.dll</HintPath>
@@ -2323,6 +2323,7 @@
     <Content Include="Features\Checkout\_SveaWebPayCheckoutPaymentMethod.cshtml" />
     <Content Include="modules\_protected\episerver-labs-grid-view\episerver-labs-grid-view.zip" />
     <Content Include="modules\_protected\episerver-labs-content-manager\episerver-labs-content-manager.zip" />
+    <Content Include="Features\MyAccount\OrderConfirmation\_SveaWebPayCheckoutConfirmation.cshtml" />
     <None Include="packages.config">
       <SubType>Designer</SubType>
     </None>

@@ -55,10 +55,9 @@ namespace Svea.WebPay.Episerver.Checkout.OrderManagement.Steps
 							return paymentStepResult;
 						}
 
-						var pollingTimeout = TimeSpan.FromSeconds(15);
-						var deliveryRequest = _requestFactory.GetDeliveryRequest(payment, _market, shipment, paymentOrder, pollingTimeout);
-
-						var order = AsyncHelper.RunSync(() => paymentOrder.Actions.DeliverOrder(deliveryRequest));
+						var deliveryRequest = _requestFactory.GetDeliveryRequest(payment, _market, shipment, paymentOrder);
+						var pollingTimeout = new PollingTimeout(15);
+						var order = AsyncHelper.RunSync(() => paymentOrder.Actions.DeliverOrder(deliveryRequest, pollingTimeout));
 
 						AddNoteAndSaveChanges(orderGroup, payment.TransactionType, $"Order delivered at Svea WebPay: {order.ResourceUri.AbsoluteUri}");
 						paymentStepResult.Status = true;

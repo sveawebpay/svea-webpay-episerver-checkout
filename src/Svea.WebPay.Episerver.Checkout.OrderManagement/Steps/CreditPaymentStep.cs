@@ -6,11 +6,12 @@ using Mediachase.Commerce.Orders;
 using Mediachase.MetaDataPlus;
 
 using Svea.WebPay.Episerver.Checkout.Common;
+using Svea.WebPay.Episerver.Checkout.Common.Helpers;
+using Svea.WebPay.SDK.PaymentAdminApi;
 
 using System;
 using System.Linq;
-using Svea.WebPay.Episerver.Checkout.Common.Helpers;
-using Svea.WebPay.SDK.PaymentAdminApi;
+
 using TransactionType = Mediachase.Commerce.Orders.TransactionType;
 
 namespace Svea.WebPay.Episerver.Checkout.OrderManagement.Steps
@@ -45,20 +46,20 @@ namespace Svea.WebPay.Episerver.Checkout.OrderManagement.Steps
 
 							if (returnForm != null)
 							{
-								var transactionDescription = string.IsNullOrWhiteSpace(returnForm.ReturnComment)
-									? "Crediting payment."
-									: returnForm.ReturnComment;
-
 								var paymentOrder = AsyncHelper.RunSync(() => SveaWebPayClient.PaymentAdmin.GetOrder(orderId));
 								var delivery = paymentOrder?.Deliveries?.FirstOrDefault();
-								var pollingTimeout = TimeSpan.FromSeconds(15);
+								var pollingTimeout = new PollingTimeout(15);
 
 								if (delivery != null)
 								{
-									if (ActionsValidationHelper.ValidateDeliveryAction(paymentOrder, delivery.Id, DeliveryActionType.CanCreditNewRow).Item1)
+									var paymentAmount = payment.Amount;
+									var returnSum = returnForm.GetAllReturnLineItems().Sum(x => x.PlacedPrice);
+									bool creditAmountIsOtherThanSum = paymentAmount != returnSum;
+
+									if (creditAmountIsOtherThanSum || ActionsValidationHelper.ValidateDeliveryAction(paymentOrder, delivery.Id, DeliveryActionType.CanCreditNewRow).Item1)
 									{
-										var creditNewOrderRowRequest = _requestFactory.GetCreditNewOrderRowRequest((OrderForm)returnForm, payment, shipment, _market, transactionDescription, pollingTimeout);
-										var creditResponseObject = AsyncHelper.RunSync(() => delivery.Actions.CreditNewRow(creditNewOrderRowRequest));
+										var creditNewOrderRowRequest = _requestFactory.GetCreditNewOrderRowRequest((OrderForm)returnForm, payment, shipment, _market, orderGroup.Currency);
+										var creditResponseObject = AsyncHelper.RunSync(() => delivery.Actions.CreditNewRow(creditNewOrderRowRequest, pollingTimeout));
 										payment.ProviderTransactionID = creditResponseObject?.Resource?.CreditId;
 									}
 									else if (ActionsValidationHelper.ValidateDeliveryAction(paymentOrder, delivery.Id, DeliveryActionType.CanCreditAmount).Item1)
@@ -67,17 +68,18 @@ namespace Svea.WebPay.Episerver.Checkout.OrderManagement.Steps
 										var creditResponseObject = AsyncHelper.RunSync(() => delivery.Actions.CreditAmount(creditAmountRequest));
 										payment.ProviderTransactionID = creditResponseObject.CreditId;
 									}
-									//else if (ActionsValidationHelper.ValidateDeliveryAction(paymentOrder, delivery.Id, DeliveryActionType.CanCreditOrderRows).Item1)
-									//{
-									//	var creditAmountRequest = _requestFactory.GetCreditOrderRowsRequest(delivery, shipment, pollingTimeout);
-									//	var creditResponseObject = AsyncHelper.RunSync(() => delivery.Actions.CreditOrderRows(creditAmountRequest));
-									//	payment.ProviderTransactionID = creditResponseObject.Resource?.CreditId;
-									//}
 									else if (ActionsValidationHelper.ValidateOrderAction(paymentOrder, OrderActionType.CanCancelAmount).Item1)
 									{
 										var cancelAmountRequest = _requestFactory.GetCancelAmountRequest(paymentOrder, payment, shipment);
 										AsyncHelper.RunSync(() => paymentOrder.Actions.CancelAmount(cancelAmountRequest));
 									}
+									else if (ActionsValidationHelper.ValidateDeliveryAction(paymentOrder, delivery.Id, DeliveryActionType.CanCreditOrderRows).Item1)
+									{
+										var creditAmountRequest = _requestFactory.GetCreditOrderRowsRequest(delivery, shipment);
+										var creditResponseObject = AsyncHelper.RunSync(() => delivery.Actions.CreditOrderRows(creditAmountRequest, pollingTimeout));
+										payment.ProviderTransactionID = creditResponseObject.Resource?.CreditId;
+									}
+
 
 									payment.Status = PaymentStatus.Processed.ToString();
 									AddNoteAndSaveChanges(orderGroup, payment.TransactionType, $"Credited with {payment.Amount}");

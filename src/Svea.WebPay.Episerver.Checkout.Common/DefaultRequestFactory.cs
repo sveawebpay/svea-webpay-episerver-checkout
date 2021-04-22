@@ -93,25 +93,50 @@ namespace Svea.WebPay.Episerver.Checkout.Common
 				: GetOrderRowsWithoutTax(orderGroup, orderGroupTotals, temporaryReference, merchantData);
 		}
 
-		public virtual CreditOrderRowsRequest GetCreditOrderRowsRequest(Delivery delivery, IShipment shipment, TimeSpan? pollingTimeout = null)
+		public virtual CreditOrderRowsRequest GetCreditOrderRowsRequest(Delivery delivery, IShipment shipment)
 		{
-			var creditOrderRows = shipment.LineItems.Select(lineItem => delivery.OrderRows.FirstOrDefault(x => x.ArticleNumber == lineItem.Code)).Where(orderRow => orderRow != null && orderRow.AvailableActions.Contains(OrderRowActionType.CanCreditRow)).ToList();
-			var orderRowIds = creditOrderRows.Select(x => (long) x.OrderRowId).ToList();
-			return new CreditOrderRowsRequest(orderRowIds, null, pollingTimeout);
+			var creditOrderRows = shipment.LineItems
+				.Select(lineItem =>
+				{
+					var orderRow = delivery.OrderRows.FirstOrDefault(x =>
+						x.AvailableActions.Contains(OrderRowActionType.CanCreditRow) &&
+						x.ArticleNumber == lineItem.Code);
+					if (orderRow != null)
+					{
+						return new RowCreditingOptions(orderRow.OrderRowId, new MinorUnit(lineItem.ReturnQuantity));
+					}
+
+					return null;
+				}).Where(x => x != null).ToList();
+
+			return new CreditOrderRowsRequest(creditOrderRows.Select(x => x.OrderRowId).ToList(), creditOrderRows);
 		}
 
-		public virtual CreditNewOrderRowRequest GetCreditNewOrderRowRequest(OrderForm orderForm, IPayment payment, IShipment shipment, IMarket market, string name, TimeSpan? pollingTimeout = null)
+		public virtual CreditNewOrderRowRequest GetCreditNewOrderRowRequest(OrderForm orderForm, IPayment payment, IShipment shipment, IMarket market, Currency currency)
+		{
+			var transactionDescription = string.IsNullOrWhiteSpace(orderForm.ReturnComment)
+				? "Crediting payment."
+				: orderForm.ReturnComment;
+
+			var taxPercentage = GetTaxPercentage(shipment, market);
+			var creditOrderRows = orderForm.LineItems.Select(l =>
+			{
+				return new CreditOrderRow(l.DisplayName, new MinorUnit(l.PlacedPrice * l.ReturnQuantity), new MinorUnit(taxPercentage));
+			}).ToList();
+
+			var creditOrderRow = new CreditOrderRow(transactionDescription, new MinorUnit(payment.Amount), new MinorUnit(taxPercentage));
+			var creditNewOrderRowRequest = new CreditNewOrderRowRequest(creditOrderRow, creditOrderRows);
+			return creditNewOrderRowRequest;
+		}
+
+		private static decimal GetTaxPercentage(IShipment shipment, IMarket market)
 		{
 			var lineItemTaxCalculator = ServiceLocator.Current.GetInstance<ILineItemTaxCalculator>();
 			var taxValues = lineItemTaxCalculator.GetTaxValuesForLineItem(shipment.LineItems.First(), market, shipment);
 			var taxPercentage = taxValues
 				.Where(x => x.TaxType == TaxType.SalesTax)
 				.Sum(x => (decimal)x.Percentage);
-
-			var creditOrderRow = new CreditOrderRow(name, new MinorUnit(payment.Amount), new MinorUnit(taxPercentage));
-
-			var creditNewOrderRowRequest = new CreditNewOrderRowRequest(creditOrderRow, null, pollingTimeout);
-			return creditNewOrderRowRequest;
+			return taxPercentage;
 		}
 
 		public virtual CreditAmountRequest GetCreditAmountRequest(IPayment payment, IShipment shipment)
@@ -124,10 +149,10 @@ namespace Svea.WebPay.Episerver.Checkout.Common
 			return new CancelAmountRequest(new MinorUnit(paymentOrder.CancelledAmount + payment.Amount));
 		}
 
-		public virtual DeliveryRequest GetDeliveryRequest(IPayment payment, IMarket market, IShipment shipment, Order paymentOrder, TimeSpan? pollingTimeout = null)
+		public virtual DeliveryRequest GetDeliveryRequest(IPayment payment, IMarket market, IShipment shipment, Order paymentOrder)
 		{
 			var orderRowIds = paymentOrder.OrderRows.Select(x => Convert.ToInt64(x.OrderRowId)).ToList();
-			return new DeliveryRequest(orderRowIds, null, null, pollingTimeout);
+			return new DeliveryRequest(orderRowIds, null, null);
 		}
 
 		public virtual CancelRequest GetCancelRequest()
