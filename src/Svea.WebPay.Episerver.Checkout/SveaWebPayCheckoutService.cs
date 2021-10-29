@@ -12,6 +12,7 @@ using Svea.WebPay.Episerver.Checkout.Common;
 using Svea.WebPay.SDK.CheckoutApi;
 
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 
@@ -51,30 +52,30 @@ namespace Svea.WebPay.Episerver.Checkout
                                                             ContentLanguage.PreferredCulture.Name, true));
 
 
-        public virtual Data CreateOrUpdateOrder(IOrderGroup orderGroup, CultureInfo currentLanguage)
+        public virtual Data CreateOrUpdateOrder(IOrderGroup orderGroup, CultureInfo currentLanguage, bool includeTaxOnLineItems, string temporaryReference = null, IList<Presetvalue> presetValues = null, IdentityFlags identityFlags = null, Guid? partnerKey = null, string merchantData = null)
         {
-	        var allLineItems = orderGroup.GetAllLineItems();
-	        if(allLineItems == null || !allLineItems.Any())
+            var allLineItems = orderGroup.GetAllLineItems();
+            if (allLineItems == null || !allLineItems.Any())
             {
-	            return null;
+                return null;
             }
 
             if (long.TryParse(orderGroup.Properties[Constants.SveaWebPayOrderIdField]?.ToString(), out var orderId))
             {
-                return UpdateOrder(orderGroup, currentLanguage, orderId);
+                return UpdateOrder(orderGroup, currentLanguage, orderId, includeTaxOnLineItems, temporaryReference, presetValues, identityFlags, partnerKey, merchantData);
             }
 
-            return CreateOrder(orderGroup, currentLanguage);
+            return CreateOrder(orderGroup, currentLanguage, includeTaxOnLineItems, temporaryReference, presetValues, identityFlags, partnerKey, merchantData);
         }
 
-        public virtual Data CreateOrder(IOrderGroup orderGroup, CultureInfo currentLanguage)
+        public virtual Data CreateOrder(IOrderGroup orderGroup, CultureInfo currentLanguage, bool includeTaxOnLineItems, string temporaryReference = null, IList<Presetvalue> presetValues = null, IdentityFlags identityFlags = null, Guid? partnerKey = null, string merchantData = null)
         {
             var market = _currentMarket.GetCurrentMarket();
             var sveaWebPayClient = _sveaWebPayClientFactory.Create(market, currentLanguage.TwoLetterISOLanguageName);
 
             try
             {
-                var orderRequest = _requestFactory.GetOrderRequest(orderGroup, market, PaymentMethodDto, currentLanguage);
+                var orderRequest = _requestFactory.GetOrderRequest(orderGroup, market, PaymentMethodDto, currentLanguage, includeTaxOnLineItems, temporaryReference, presetValues, identityFlags, partnerKey, merchantData);
                 var order = AsyncHelper.RunSync(() => sveaWebPayClient.Checkout.CreateOrder(orderRequest));
                 orderGroup.Properties[Constants.Culture] = currentLanguage.TwoLetterISOLanguageName;
                 orderGroup.Properties[Constants.SveaWebPayOrderIdField] = order.OrderId;
@@ -88,8 +89,8 @@ namespace Svea.WebPay.Episerver.Checkout
                 throw;
             }
         }
-        
-        public virtual Data UpdateOrder(IOrderGroup orderGroup, CultureInfo currentLanguage, long orderId)
+
+        public virtual Data UpdateOrder(IOrderGroup orderGroup, CultureInfo currentLanguage, long orderId, bool includeTaxOnLineItems, string temporaryReference = null, IList<Presetvalue> presetValues = null, IdentityFlags identityFlags = null, Guid? partnerKey = null, string merchantData = null)
         {
             var market = _currentMarket.GetCurrentMarket();
             var sveaWebPayClient = _sveaWebPayClientFactory.Create(market, currentLanguage.TwoLetterISOLanguageName);
@@ -97,12 +98,12 @@ namespace Svea.WebPay.Episerver.Checkout
             var order = AsyncHelper.RunSync(() => sveaWebPayClient.Checkout.GetOrder(orderId));
             if (order.Status != CheckoutOrderStatus.Created)
             {
-                return CreateOrder(orderGroup, currentLanguage);
+                return CreateOrder(orderGroup, currentLanguage, includeTaxOnLineItems, temporaryReference, presetValues, identityFlags, partnerKey, merchantData);
             }
 
             try
             {
-                var updateOrderRequest = _requestFactory.GetUpdateOrderRequest(orderGroup, market, PaymentMethodDto, currentLanguage);
+                var updateOrderRequest = _requestFactory.GetUpdateOrderRequest(orderGroup, market, PaymentMethodDto, currentLanguage, includeTaxOnLineItems, temporaryReference, merchantData);
                 order = AsyncHelper.RunSync(() => sveaWebPayClient.Checkout.UpdateOrder(orderId, updateOrderRequest));
                 orderGroup.Properties[Constants.Culture] = currentLanguage.TwoLetterISOLanguageName;
                 return order;

@@ -24,7 +24,7 @@
 
   <ItemGroup>
     <PackageReference Include="EPiServer.Commerce.Core" Version="13.7.1" />
-    <PackageReference Include="Svea.WebPay.SDK" Version="1.0.0" />
+    <PackageReference Include="Svea.WebPay.SDK" Version="2.0.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -39,7 +39,6 @@
 
   <ItemGroup>
     <Compile Update="Apps\Order\Payments\Plugins\SveaWebPayCheckout\ConfigurePayment.ascx.cs">
-      <SubType>ASPXCodeBehind</SubType>
       <DependentUpon>ConfigurePayment.ascx</DependentUpon>
     </Compile>
     <Compile Update="Apps\Order\Payments\Plugins\SveaWebPayCheckout\ConfigurePayment.ascx.designer.cs">

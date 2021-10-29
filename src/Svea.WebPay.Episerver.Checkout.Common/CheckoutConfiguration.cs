@@ -12,5 +12,6 @@ namespace Svea.WebPay.Episerver.Checkout.Common
         public Uri CheckoutValidationCallbackUri { get; set; }
         public List<long> ActivePartPaymentCampaigns { get; set; }
         public long? PromotedPartPaymentCampaign { get; set; }
+        public bool RequireElectronicIdAuthentication { get; set; }
     }
 }

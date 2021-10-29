@@ -5,6 +5,8 @@ using Mediachase.Commerce;
 using Mediachase.Commerce.Orders;
 
 using Svea.WebPay.Episerver.Checkout.Common;
+using Svea.WebPay.Episerver.Checkout.Common.Helpers;
+using Svea.WebPay.SDK.PaymentAdminApi;
 
 using System;
 
@@ -20,9 +22,9 @@ namespace Svea.WebPay.Episerver.Checkout.OrderManagement.Steps
         private readonly IRequestFactory _requestFactory;
 
         public CapturePaymentStep(
-            IPayment payment, 
-            IMarket market, 
-            SveaWebPayClientFactory sveaWebPayClientFactory, 
+            IPayment payment,
+            IMarket market,
+            SveaWebPayClientFactory sveaWebPayClientFactory,
             IRequestFactory requestFactory) : base(payment, market, sveaWebPayClientFactory)
         {
             _market = market;
@@ -46,18 +48,19 @@ namespace Svea.WebPay.Episerver.Checkout.OrderManagement.Steps
                         }
 
                         var paymentOrder = AsyncHelper.RunSync(() => SveaWebPayClient.PaymentAdmin.GetOrder(orderId));
-                        if (paymentOrder.Actions.DeliverOrder == null)
+                        var (isValid, errorMessage) = ActionsValidationHelper.ValidateOrderAction(paymentOrder, OrderActionType.CanDeliverOrder);
+                        if (!isValid)
                         {
+                            AddNoteAndSaveChanges(orderGroup, payment.TransactionType, errorMessage);
                             AddNoteAndSaveChanges(orderGroup, payment.TransactionType, $"Deliver Order/Capture is not possible on this order {orderId}");
                             return paymentStepResult;
                         }
 
-                        var pollingTimeout = TimeSpan.FromSeconds(3);
-                        var deliveryRequest = _requestFactory.GetDeliveryRequest(payment, _market, shipment, paymentOrder, pollingTimeout);
+                        var deliveryRequest = _requestFactory.GetDeliveryRequest(payment, _market, shipment, paymentOrder);
+                        var pollingTimeout = new PollingTimeout(15);
+                        var order = AsyncHelper.RunSync(() => paymentOrder.Actions.DeliverOrder(deliveryRequest, pollingTimeout));
 
-                        var order = AsyncHelper.RunSync(() => paymentOrder.Actions.DeliverOrder(deliveryRequest));
-                        
-                        AddNoteAndSaveChanges(orderGroup, payment.TransactionType, $"Order delivered at Svea WebPay");
+                        AddNoteAndSaveChanges(orderGroup, payment.TransactionType, $"Order delivered at Svea WebPay: {order.ResourceUri.AbsoluteUri}");
                         paymentStepResult.Status = true;
 
                         return paymentStepResult;

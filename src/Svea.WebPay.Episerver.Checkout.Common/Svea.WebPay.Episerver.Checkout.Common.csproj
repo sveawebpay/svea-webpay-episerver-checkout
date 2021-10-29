@@ -9,8 +9,7 @@
   <ItemGroup>
     <PackageReference Include="EPiServer.CMS.Core" Version="11.13.0" />
     <PackageReference Include="EPiServer.Commerce.Core" Version="13.7.1" />
-    <PackageReference Include="ISO3166" Version="1.0.1" />
-    <PackageReference Include="Svea.WebPay.SDK" Version="1.0.0" />
+    <PackageReference Include="Svea.WebPay.SDK" Version="2.0.0" />
 
   </ItemGroup>
 
