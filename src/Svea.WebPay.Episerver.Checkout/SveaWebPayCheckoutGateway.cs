@@ -12,6 +12,7 @@ using Svea.WebPay.Episerver.Checkout.Steps;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Svea.WebPay.Episerver.Checkout
 {
@@ -152,7 +153,7 @@ namespace Svea.WebPay.Episerver.Checkout
                 capturePaymentStep.SetSuccessor(creditPaymentStep);
                 creditPaymentStep.SetSuccessor(cancelPaymentStep);
 
-                return authorizePaymentStep.Process(payment, _orderForm, OrderGroup, _shipment);
+                return AsyncHelper.RunSync(() => authorizePaymentStep.Process(payment, _orderForm, OrderGroup, _shipment));
             }
             catch (Exception ex)
             {

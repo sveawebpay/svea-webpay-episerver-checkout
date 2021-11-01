@@ -1,4 +1,5 @@
-﻿using EPiServer.Commerce.Order;
+﻿using System.Threading.Tasks;
+using EPiServer.Commerce.Order;
 
 using Mediachase.Commerce;
 using Mediachase.Commerce.Orders;
@@ -14,14 +15,14 @@ namespace Svea.WebPay.Episerver.Checkout.OrderManagement.Steps
         {
         }
 
-        public override PaymentStepResult Process(IPayment payment, IOrderForm orderForm, IOrderGroup orderGroup, IShipment shipment)
+        public override async Task<PaymentStepResult> Process(IPayment payment, IOrderForm orderForm, IOrderGroup orderGroup, IShipment shipment)
         {
             if (payment.TransactionType != TransactionType.Authorization.ToString())
             {
                 var paymentStepResult = new PaymentStepResult();
                 if (Successor != null)
                 {
-                    paymentStepResult = Successor.Process(payment, orderForm, orderGroup, shipment);
+                    paymentStepResult = await Successor.Process(payment, orderForm, orderGroup, shipment).ConfigureAwait(false);
                     paymentStepResult.Status = Successor != null && paymentStepResult.Status;
                 }
 

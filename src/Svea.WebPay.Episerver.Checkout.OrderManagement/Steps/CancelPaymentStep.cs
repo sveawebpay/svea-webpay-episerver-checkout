@@ -11,6 +11,7 @@ using Svea.WebPay.SDK.PaymentAdminApi;
 
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 
 using TransactionType = Mediachase.Commerce.Orders.TransactionType;
 
@@ -28,7 +29,7 @@ namespace Svea.WebPay.Episerver.Checkout.OrderManagement.Steps
             _market = market;
         }
 
-        public override PaymentStepResult Process(IPayment payment, IOrderForm orderForm, IOrderGroup orderGroup, IShipment shipment)
+        public override async Task<PaymentStepResult> Process(IPayment payment, IOrderForm orderForm, IOrderGroup orderGroup, IShipment shipment)
         {
             var paymentStepResult = new PaymentStepResult();
 
@@ -40,7 +41,7 @@ namespace Svea.WebPay.Episerver.Checkout.OrderManagement.Steps
 
                     if (long.TryParse(orderGroup.Properties[Constants.SveaWebPayOrderIdField]?.ToString(), out var orderId))
                     {
-                        var order = AsyncHelper.RunSync(() => SveaWebPayClient.PaymentAdmin.GetOrder(orderId));
+                        var order = await SveaWebPayClient.PaymentAdmin.GetOrder(orderId).ConfigureAwait(false);
                         var (isValid, errorMessage) = ActionsValidationHelper.ValidateOrderAction(order, OrderActionType.CanCancelOrder);
                         if (!isValid)
                         {
@@ -50,7 +51,7 @@ namespace Svea.WebPay.Episerver.Checkout.OrderManagement.Steps
                         }
 
                         var cancelRequest = _requestFactory.GetCancelRequest();
-                        AsyncHelper.RunSync(() => order.Actions.Cancel(cancelRequest));
+                        await order.Actions.Cancel(cancelRequest).ConfigureAwait(false);
                         payment.Status = PaymentStatus.Processed.ToString();
                         AddNoteAndSaveChanges(orderGroup, payment.TransactionType, $"Payment {orderId} has been cancelled at Svea WebPay");
                         return paymentStepResult;
@@ -71,7 +72,7 @@ namespace Svea.WebPay.Episerver.Checkout.OrderManagement.Steps
 
             if (Successor != null)
             {
-                return Successor.Process(payment, orderForm, orderGroup, shipment);
+                return await Successor.Process(payment, orderForm, orderGroup, shipment).ConfigureAwait(false);
             }
 
             return paymentStepResult;

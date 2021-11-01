@@ -11,6 +11,7 @@ using Svea.WebPay.SDK.PaymentAdminApi;
 
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 
 using TransactionType = Mediachase.Commerce.Orders.TransactionType;
 
@@ -29,7 +30,7 @@ namespace Svea.WebPay.Episerver.Checkout.OrderManagement.Steps
             _market = market;
         }
 
-        public override PaymentStepResult Process(IPayment payment, IOrderForm orderForm, IOrderGroup orderGroup, IShipment shipment)
+        public override async Task<PaymentStepResult> Process(IPayment payment, IOrderForm orderForm, IOrderGroup orderGroup, IShipment shipment)
         {
             var paymentStepResult = new PaymentStepResult();
 
@@ -46,7 +47,7 @@ namespace Svea.WebPay.Episerver.Checkout.OrderManagement.Steps
 
                             if (returnForm != null)
                             {
-                                var paymentOrder = AsyncHelper.RunSync(() => SveaWebPayClient.PaymentAdmin.GetOrder(orderId));
+                                var paymentOrder = await SveaWebPayClient.PaymentAdmin.GetOrder(orderId).ConfigureAwait(false);
                                 var delivery = paymentOrder?.Deliveries?.FirstOrDefault();
                                 var pollingTimeout = new PollingTimeout(15);
 
@@ -59,24 +60,24 @@ namespace Svea.WebPay.Episerver.Checkout.OrderManagement.Steps
                                     if (creditAmountIsOtherThanSum || ActionsValidationHelper.ValidateDeliveryAction(paymentOrder, delivery.Id, DeliveryActionType.CanCreditNewRow).Item1)
                                     {
                                         var creditNewOrderRowRequest = _requestFactory.GetCreditNewOrderRowRequest((OrderForm)returnForm, payment, shipment, _market, orderGroup.Currency);
-                                        var creditResponseObject = AsyncHelper.RunSync(() => delivery.Actions.CreditNewRow(creditNewOrderRowRequest, pollingTimeout));
+                                        var creditResponseObject = await delivery.Actions.CreditNewRow(creditNewOrderRowRequest, pollingTimeout).ConfigureAwait(false);
                                         payment.ProviderTransactionID = creditResponseObject?.Resource?.CreditId;
                                     }
                                     else if (ActionsValidationHelper.ValidateDeliveryAction(paymentOrder, delivery.Id, DeliveryActionType.CanCreditAmount).Item1)
                                     {
                                         var creditAmountRequest = _requestFactory.GetCreditAmountRequest(payment, shipment);
-                                        var creditResponseObject = AsyncHelper.RunSync(() => delivery.Actions.CreditAmount(creditAmountRequest));
+                                        var creditResponseObject = await delivery.Actions.CreditAmount(creditAmountRequest).ConfigureAwait(false);
                                         payment.ProviderTransactionID = creditResponseObject.CreditId;
                                     }
                                     else if (ActionsValidationHelper.ValidateOrderAction(paymentOrder, OrderActionType.CanCancelAmount).Item1)
                                     {
                                         var cancelAmountRequest = _requestFactory.GetCancelAmountRequest(paymentOrder, payment, shipment);
-                                        AsyncHelper.RunSync(() => paymentOrder.Actions.CancelAmount(cancelAmountRequest));
+                                        await paymentOrder.Actions.CancelAmount(cancelAmountRequest).ConfigureAwait(false);
                                     }
                                     else if (ActionsValidationHelper.ValidateDeliveryAction(paymentOrder, delivery.Id, DeliveryActionType.CanCreditOrderRows).Item1)
                                     {
                                         var creditAmountRequest = _requestFactory.GetCreditOrderRowsRequest(delivery, shipment);
-                                        var creditResponseObject = AsyncHelper.RunSync(() => delivery.Actions.CreditOrderRows(creditAmountRequest, pollingTimeout));
+                                        var creditResponseObject = await delivery.Actions.CreditOrderRows(creditAmountRequest, pollingTimeout).ConfigureAwait(false);
                                         payment.ProviderTransactionID = creditResponseObject.Resource?.CreditId;
                                     }
 
@@ -103,7 +104,7 @@ namespace Svea.WebPay.Episerver.Checkout.OrderManagement.Steps
             }
             else if (Successor != null)
             {
-                return Successor.Process(payment, orderForm, orderGroup, shipment);
+                return await Successor.Process(payment, orderForm, orderGroup, shipment).ConfigureAwait(false);
             }
 
             return paymentStepResult;
