@@ -42,7 +42,7 @@ namespace Foundation.SystemTests.Tests.PaymentTest.PaymentCancellationTests
             Assert.That(order.OrderStatus, Is.EqualTo(Svea.WebPay.SDK.PaymentAdminApi.OrderStatus.Cancelled));
             Assert.That(order.PaymentType, Is.EqualTo(Svea.WebPay.SDK.PaymentAdminApi.PaymentType.Card));
             Assert.That(order.AvailableActions.Count, Is.EqualTo(0));
-            Assert.That(order.CancelledAmount, Is.EqualTo(_totalAmount ));
+            Assert.That(order.CancelledAmount.InLowestMonetaryUnit, Is.EqualTo(_totalAmount * 100));
 
             Assert.IsTrue(order.OrderRows.Any(item => item.Name.ToUpper() == products[0].Name.ToUpper()));
             Assert.IsTrue(order.OrderRows.Any(item => item.Name.ToUpper() == products[1].Name.ToUpper()));

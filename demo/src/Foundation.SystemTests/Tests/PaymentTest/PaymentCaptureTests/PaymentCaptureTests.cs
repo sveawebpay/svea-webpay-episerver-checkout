@@ -42,12 +42,12 @@ namespace Foundation.SystemTests.Tests.PaymentTest.PaymentCaptureTests
             Assert.That(order.OrderStatus, Is.EqualTo(Svea.WebPay.SDK.PaymentAdminApi.OrderStatus.Delivered));
             Assert.That(order.PaymentType, Is.EqualTo(Svea.WebPay.SDK.PaymentAdminApi.PaymentType.Card));
             Assert.That(order.AvailableActions, Is.EquivalentTo(new List<string> { "CanCancelOrder", "CanCancelAmount" }));
-            Assert.That(order.OrderAmount, Is.EqualTo(_totalAmount));
+            Assert.That(order.OrderAmount.InLowestMonetaryUnit, Is.EqualTo(_totalAmount * 100));
 
             Assert.IsNull(order.OrderRows);
             
-            Assert.That(order.Deliveries.FirstOrDefault().DeliveryAmount, Is.EqualTo(_totalAmount * 100));
-            Assert.That(order.Deliveries.FirstOrDefault().CreditedAmount, Is.EqualTo(0));
+            Assert.That(order.Deliveries.FirstOrDefault().DeliveryAmount.InLowestMonetaryUnit, Is.EqualTo(_totalAmount * 100));
+            Assert.That(order.Deliveries.FirstOrDefault().CreditedAmount.InLowestMonetaryUnit, Is.EqualTo(0));
             Assert.IsTrue(order.Deliveries.FirstOrDefault().OrderRows.Any(item => item.Name.ToUpper() == products[0].Name.ToUpper()));
             Assert.IsTrue(order.Deliveries.FirstOrDefault().OrderRows.Any(item => item.Name.ToUpper() == products[1].Name.ToUpper()));
         }
