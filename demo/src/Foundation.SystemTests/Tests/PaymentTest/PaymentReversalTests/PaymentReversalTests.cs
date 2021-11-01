@@ -15,6 +15,7 @@ namespace Foundation.SystemTests.Tests.PaymentTest.PaymentReversalTests
 
         [Test]
         [Category(TestCategory.Card)]
+        [RetryWithException(2)]
         [TestCaseSource(nameof(TestData), new object[] { false })]
         public async Task PartialReversal_With_CardAsync(Product[] products)
         {
@@ -52,6 +53,7 @@ namespace Foundation.SystemTests.Tests.PaymentTest.PaymentReversalTests
 
         [Test]
         [Category(TestCategory.Card)]
+        [RetryWithException(2)]
         [TestCaseSource(nameof(TestData), new object[] { false })]
         public async Task ConsecutivePartialReversal_With_CardAsync(Product[] products)
         {
@@ -92,6 +94,7 @@ namespace Foundation.SystemTests.Tests.PaymentTest.PaymentReversalTests
 
         [Test]
         [Category(TestCategory.Card)]
+        [RetryWithException(2)]
         [TestCaseSource(nameof(TestData), new object[] { false })]
         public async Task FullReversal_With_CardAsync(Product[] products)
         {
@@ -131,6 +134,7 @@ namespace Foundation.SystemTests.Tests.PaymentTest.PaymentReversalTests
 
         [Test]
         [Category(TestCategory.Card)]
+        [RetryWithException(2)]
         [TestCaseSource(nameof(TestData), new object[] { false })]
         public async Task PartialReversal_With_InvoiceAsync(Product[] products)
         {
@@ -172,6 +176,7 @@ namespace Foundation.SystemTests.Tests.PaymentTest.PaymentReversalTests
 
         [Test]
         [Category(TestCategory.Card)]
+        [RetryWithException(2)]
         [TestCaseSource(nameof(TestData), new object[] { false })]
         public async Task FullReversal_With_InvoiceAsync(Product[] products)
         {

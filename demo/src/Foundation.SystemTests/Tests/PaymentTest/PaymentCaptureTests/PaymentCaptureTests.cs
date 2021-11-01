@@ -4,7 +4,6 @@ using Foundation.SystemTests.Tests.Helpers;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Foundation.SystemTests.Test.Helpers;
-using System;
 using System.Linq;
 
 namespace Foundation.SystemTests.Tests.PaymentTest.PaymentCaptureTests
@@ -16,6 +15,7 @@ namespace Foundation.SystemTests.Tests.PaymentTest.PaymentCaptureTests
 
         [Test]
         [Category(TestCategory.Card)]
+        [RetryWithException(2)]
         [TestCaseSource(nameof(TestData), new object[] { false })]
         public async Task Capture_With_CardAsync(Product[] products)
         {

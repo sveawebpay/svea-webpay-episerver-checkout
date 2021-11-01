@@ -15,6 +15,7 @@ namespace Foundation.SystemTests.Tests.PaymentTest.PaymentSaleTests
 
         [Test]
         [Category(TestCategory.Swish)]
+        [RetryWithException(2)]
         [TestCaseSource(nameof(TestData), new object[] { false })]
         public async Task Sale_With_SwishAsync(Product[] products)
         {

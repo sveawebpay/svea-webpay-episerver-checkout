@@ -3,7 +3,6 @@ using Foundation.SystemTests.Tests.Base;
 using Foundation.SystemTests.Tests.Helpers;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using System;
 using System.Linq;
 
 namespace Foundation.SystemTests.Tests.PaymentTest.PaymentCancellationTests
@@ -14,6 +13,7 @@ namespace Foundation.SystemTests.Tests.PaymentTest.PaymentCancellationTests
         public PaymentCancellationTests(string driverAlias) : base(driverAlias) { }
 
         [Test]
+        [RetryWithException(2)]
         [Category(TestCategory.Card)]
         [TestCaseSource(nameof(TestData), new object[] { false })]
         public async Task Cancellation_With_CardAsync(Product[] products)
