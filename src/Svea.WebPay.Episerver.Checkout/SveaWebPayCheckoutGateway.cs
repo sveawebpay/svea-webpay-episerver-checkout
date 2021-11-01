@@ -12,7 +12,6 @@ using Svea.WebPay.Episerver.Checkout.Steps;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace Svea.WebPay.Episerver.Checkout
 {
