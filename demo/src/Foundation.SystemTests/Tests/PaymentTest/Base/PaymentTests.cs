@@ -113,7 +113,7 @@ namespace Foundation.SystemTests.Tests.PaymentTest
                 .RefreshPage()
                 .SveaCheckout.Click()
                 .TotalAmount.StoreAmount(out _totalAmountStr, ".")
-                .TotalAmount.StorePrice(out _totalAmount, ".");
+                .TotalAmount.StorePrice(out _totalAmount, " ");
         }
 
         public SveaPaymentFramePage GoToSveaPaymentFrame(Product[] products)
