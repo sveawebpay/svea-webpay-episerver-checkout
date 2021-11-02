@@ -53,10 +53,10 @@ namespace Svea.WebPay.Episerver.Checkout.OrderManagement.Steps
                                 if (delivery != null)
                                 {
                                     var paymentAmount = payment.Amount;
-                                    var returnSum = returnForm.GetAllReturnLineItems().Sum(x => x.PlacedPrice);
+                                    var returnSum = returnForm.GetAllReturnLineItems().Sum(x => x.GetExtendedPrice(orderGroup.Currency));
                                     bool creditAmountIsOtherThanSum = paymentAmount != returnSum;
 
-                                    if (creditAmountIsOtherThanSum || ActionsValidationHelper.ValidateDeliveryAction(paymentOrder, delivery.Id, DeliveryActionType.CanCreditNewRow).Item1)
+                                    if (creditAmountIsOtherThanSum && ActionsValidationHelper.ValidateDeliveryAction(paymentOrder, delivery.Id, DeliveryActionType.CanCreditNewRow).Item1)
                                     {
                                         var creditNewOrderRowRequest = _requestFactory.GetCreditNewOrderRowRequest((OrderForm)returnForm, payment, shipment, _market, orderGroup.Currency);
                                         var creditResponseObject = AsyncHelper.RunSync(() => delivery.Actions.CreditNewRow(creditNewOrderRowRequest, pollingTimeout));
@@ -68,16 +68,16 @@ namespace Svea.WebPay.Episerver.Checkout.OrderManagement.Steps
                                         var creditResponseObject = AsyncHelper.RunSync(() => delivery.Actions.CreditAmount(creditAmountRequest));
                                         payment.ProviderTransactionID = creditResponseObject.CreditId;
                                     }
-                                    else if (ActionsValidationHelper.ValidateOrderAction(paymentOrder, OrderActionType.CanCancelAmount).Item1)
-                                    {
-                                        var cancelAmountRequest = _requestFactory.GetCancelAmountRequest(paymentOrder, payment, shipment);
-                                        AsyncHelper.RunSync(() => paymentOrder.Actions.CancelAmount(cancelAmountRequest));
-                                    }
                                     else if (ActionsValidationHelper.ValidateDeliveryAction(paymentOrder, delivery.Id, DeliveryActionType.CanCreditOrderRows).Item1)
                                     {
                                         var creditAmountRequest = _requestFactory.GetCreditOrderRowsRequest(delivery, shipment);
                                         var creditResponseObject = AsyncHelper.RunSync(() => delivery.Actions.CreditOrderRows(creditAmountRequest, pollingTimeout));
                                         payment.ProviderTransactionID = creditResponseObject.Resource?.CreditId;
+                                    }
+                                    else if (ActionsValidationHelper.ValidateOrderAction(paymentOrder, OrderActionType.CanCancelAmount).Item1)
+                                    {
+                                        var cancelAmountRequest = _requestFactory.GetCancelAmountRequest(paymentOrder, payment, shipment);
+                                        AsyncHelper.RunSync(() => paymentOrder.Actions.CancelAmount(cancelAmountRequest));
                                     }
 
 

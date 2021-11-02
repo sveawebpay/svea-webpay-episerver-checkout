@@ -32,17 +32,20 @@ namespace Svea.WebPay.Episerver.Checkout.Common
         private readonly ILineItemTaxCalculator _lineItemTaxCalculator;
         private readonly LocalizationService _localizationService;
         private readonly IOrderGroupCalculator _orderGroupCalculator;
+        private readonly IReturnOrderFormCalculator _returnOrderFormCalculator;
 
         public DefaultRequestFactory(
             ICheckoutConfigurationLoader checkoutConfigurationLoader,
             ILineItemTaxCalculator lineItemTaxCalculator,
             LocalizationService localizationService,
-            IOrderGroupCalculator orderGroupCalculator)
+            IOrderGroupCalculator orderGroupCalculator,
+            IReturnOrderFormCalculator returnOrderFormCalculator)
         {
             _checkoutConfigurationLoader = checkoutConfigurationLoader ?? throw new ArgumentNullException(nameof(checkoutConfigurationLoader));
             _lineItemTaxCalculator = lineItemTaxCalculator;
             _localizationService = localizationService;
             _orderGroupCalculator = orderGroupCalculator;
+            _returnOrderFormCalculator = returnOrderFormCalculator;
         }
 
         public virtual CreateOrderModel GetOrderRequest(IOrderGroup orderGroup, IMarket market, PaymentMethodDto paymentMethodDto, CultureInfo currentLanguage, bool includeTaxOnLineItems, string temporaryReference = null, IList<Presetvalue> presetValues = null, IdentityFlags identityFlags = null, Guid? partnerKey = null, string merchantData = null)
@@ -123,7 +126,21 @@ namespace Svea.WebPay.Episerver.Checkout.Common
                 : orderForm.ReturnComment;
 
             var taxPercentage = GetTaxPercentage(shipment, market);
-            var creditOrderRows = orderForm.LineItems.Select(l => new CreditOrderRow(l.DisplayName, new MinorUnit(l.PlacedPrice * l.ReturnQuantity), new MinorUnit(taxPercentage))).ToList();
+            
+            var creditOrderRows = orderForm.LineItems.Select(l => new CreditOrderRow(l.DisplayName, new MinorUnit(l.GetDiscountedPrice(currency) / l.Quantity), new MinorUnit(taxPercentage), new MinorUnit(l.ReturnQuantity))).ToList();
+
+            var orderDiscountTotal = _returnOrderFormCalculator.GetOrderDiscountTotal(orderForm, currency);
+            if (orderDiscountTotal.Amount > 0)
+            {
+                creditOrderRows.Add(new CreditOrderRow("DISCOUNT", new MinorUnit(orderDiscountTotal * -1), new MinorUnit(taxPercentage)));
+            }
+
+            var creditOrderRowSum = creditOrderRows.Sum(o => o.UnitPrice * o.Quantity);
+            if (payment.Amount > creditOrderRowSum)
+            {
+                var restSum = payment.Amount - creditOrderRowSum;
+                creditOrderRows.Add(new CreditOrderRow("CREDIT", new MinorUnit(restSum), new MinorUnit(taxPercentage)));
+            }
 
             var creditOrderRow = new CreditOrderRow(transactionDescription, new MinorUnit(payment.Amount), new MinorUnit(taxPercentage));
             var creditNewOrderRowRequest = new CreditNewOrderRowRequest(creditOrderRow, creditOrderRows);
@@ -132,7 +149,7 @@ namespace Svea.WebPay.Episerver.Checkout.Common
 
         private decimal GetTaxPercentage(IShipment shipment, IMarket market)
         {
-          var taxValues = _lineItemTaxCalculator.GetTaxValuesForLineItem(shipment.LineItems.First(), market, shipment);
+            var taxValues = _lineItemTaxCalculator.GetTaxValuesForLineItem(shipment.LineItems.First(), market, shipment);
             var taxPercentage = taxValues
                 .Where(x => x.TaxType == TaxType.SalesTax)
                 .Sum(x => (decimal)x.Percentage);
