@@ -127,12 +127,17 @@ namespace Svea.WebPay.Episerver.Checkout.Common
 
             var taxPercentage = GetTaxPercentage(shipment, market);
             
-            var creditOrderRows = orderForm.LineItems.Select(l => new CreditOrderRow(l.DisplayName, new MinorUnit(l.GetDiscountedPrice(currency) / l.Quantity), new MinorUnit(taxPercentage), new MinorUnit(l.ReturnQuantity))).ToList();
-
+            var creditOrderRows = orderForm.LineItems.Select(l =>
+            {
+                var prices = l.GetPrices(market, shipment, currency);
+                return new CreditOrderRow(l.DisplayName, prices.UnitPrice - (prices.TotalDiscountAmount / l.ReturnQuantity), prices.TaxRate, new MinorUnit(l.ReturnQuantity));
+            }).ToList();
+            
             var orderDiscountTotal = _returnOrderFormCalculator.GetOrderDiscountTotal(orderForm, currency);
             if (orderDiscountTotal.Amount > 0)
             {
-                creditOrderRows.Add(new CreditOrderRow("DISCOUNT", new MinorUnit(orderDiscountTotal * -1), new MinorUnit(taxPercentage)));
+                var orderDiscountWithTax = _lineItemTaxCalculator.PriceIncludingTaxPercent(orderDiscountTotal, taxPercentage, market);
+                creditOrderRows.Add(new CreditOrderRow("DISCOUNT", new MinorUnit(currency.Round(orderDiscountWithTax) * -1), new MinorUnit(taxPercentage)));
             }
 
             var creditOrderRowSum = creditOrderRows.Sum(o => o.UnitPrice * o.Quantity);
