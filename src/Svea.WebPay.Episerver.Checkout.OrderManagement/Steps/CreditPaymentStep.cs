@@ -55,7 +55,7 @@ namespace Svea.WebPay.Episerver.Checkout.OrderManagement.Steps
                                 if (delivery != null)
                                 {
                                     var paymentAmount = payment.Amount;
-                                    var returnSum = returnForm.GetAllReturnLineItems().Sum(x => x.GetExtendedPrice(orderGroup.Currency));
+                                    var returnSum = _returnOrderFormCalculator.GetReturnOrderFormTotals(returnForm, _market, orderGroup.Currency).Total;
                                     bool creditAmountIsOtherThanSum = paymentAmount != returnSum;
 
                                     if (creditAmountIsOtherThanSum && ActionsValidationHelper.ValidateDeliveryAction(paymentOrder, delivery.Id, DeliveryActionType.CanCreditNewRow).Item1)
