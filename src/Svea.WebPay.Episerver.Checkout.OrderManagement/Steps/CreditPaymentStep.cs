@@ -20,12 +20,14 @@ namespace Svea.WebPay.Episerver.Checkout.OrderManagement.Steps
     {
         private static readonly ILogger Logger = LogManager.GetLogger(typeof(CreditPaymentStep));
         private readonly IRequestFactory _requestFactory;
+        private readonly IReturnOrderFormCalculator _returnOrderFormCalculator;
         private readonly IMarket _market;
 
-        public CreditPaymentStep(IPayment payment, IMarket market, SveaWebPayClientFactory sveaWebPayClientFactory, IRequestFactory requestFactory)
+        public CreditPaymentStep(IPayment payment, IMarket market, SveaWebPayClientFactory sveaWebPayClientFactory, IRequestFactory requestFactory, IReturnOrderFormCalculator returnOrderFormCalculator)
             : base(payment, market, sveaWebPayClientFactory)
         {
             _requestFactory = requestFactory;
+            _returnOrderFormCalculator = returnOrderFormCalculator;
             _market = market;
         }
 
