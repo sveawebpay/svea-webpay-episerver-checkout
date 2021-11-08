@@ -2670,8 +2670,10 @@
   <Target Name="BeforeBuild">
   </Target>
   -->
+  <!--  
   <Target Name="AfterBuild">
     <Exec Condition="'$(Configuration)' == 'Debug' " Command="npm run dev" />
     <Exec Condition="'$(Configuration)' == 'Release' " Command="npm run prod" />
   </Target>
+  -->
 </Project>
