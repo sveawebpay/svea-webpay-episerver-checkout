@@ -2,7 +2,6 @@
 using Foundation.SystemTests.PageObjectModels;
 using Foundation.SystemTests.PageObjectModels.Payment;
 using Foundation.SystemTests.Services;
-using Foundation.SystemTests.PageObjectModels.CommerceSite.Base;
 using System;
 
 namespace Foundation.SystemTests.Test.Helpers
@@ -16,9 +15,9 @@ namespace Foundation.SystemTests.Test.Helpers
             .PaymentMethods.Card.Click()
             .Submit.ClickAndGo<CardPaymentPage>()
             .CardNumber.IsVisible.WaitTo.BeTrue()
-            .Do(x => 
+            .Do(x =>
             {
-                if(x.DebitCard.Exists(new SearchOptions { IsSafely = true, Timeout = TimeSpan.FromSeconds(1) }))
+                if (x.DebitCard.Exists(new SearchOptions { IsSafely = true, Timeout = TimeSpan.FromSeconds(1) }))
                 {
                     x.DebitCard.Click();
                 }
@@ -67,7 +66,7 @@ namespace Foundation.SystemTests.Test.Helpers
                 .MessageCode.StoreValue(out string code)
                 .Code.Set(code)
                 .Next.Click()
-                .AccountOptions.IsVisible.WaitTo.BeTrue()
+                .AccountOptions.IsVisible.WaitTo.Within(60).BeTrue()
                 .Next.Click()
                 .MessageCode.StoreValue(out code)
                 .Code.Set(code)

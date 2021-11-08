@@ -212,7 +212,7 @@ namespace Foundation.SystemTests.Tests.Helpers
                     .ReturnRows[index].AcknowledgeReceiptItems.Click()
                     //.ReturnRows[index].TableReturns.Rows.Count.WaitTo.Equal(products.Length)
                     .ReturnRows[index].CompleteReturn.IsEnabled.WaitTo.BeTrue()
-                    .OrderTotal.StorePrice(out var totalAmount, characterToRemove: ".")
+                    .OrderTotal.StorePrice(out var totalAmount, characterToRemove: " ")
                     .ReturnRows[index].CompleteReturn.Click()
                     .CreateRefundFrame.DoWithin<CreateRefundFramePage>(x =>
                     {

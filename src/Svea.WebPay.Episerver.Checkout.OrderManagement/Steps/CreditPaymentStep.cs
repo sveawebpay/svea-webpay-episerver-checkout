@@ -6,6 +6,8 @@ using Mediachase.Commerce.Orders;
 using Mediachase.MetaDataPlus;
 
 using Svea.WebPay.Episerver.Checkout.Common;
+using Svea.WebPay.Episerver.Checkout.Common.Helpers;
+using Svea.WebPay.SDK.PaymentAdminApi;
 
 using System;
 using System.Linq;
@@ -18,12 +20,14 @@ namespace Svea.WebPay.Episerver.Checkout.OrderManagement.Steps
     {
         private static readonly ILogger Logger = LogManager.GetLogger(typeof(CreditPaymentStep));
         private readonly IRequestFactory _requestFactory;
+        private readonly IReturnOrderFormCalculator _returnOrderFormCalculator;
         private readonly IMarket _market;
 
-        public CreditPaymentStep(IPayment payment, IMarket market, SveaWebPayClientFactory sveaWebPayClientFactory, IRequestFactory requestFactory)
+        public CreditPaymentStep(IPayment payment, IMarket market, SveaWebPayClientFactory sveaWebPayClientFactory, IRequestFactory requestFactory, IReturnOrderFormCalculator returnOrderFormCalculator)
             : base(payment, market, sveaWebPayClientFactory)
         {
             _requestFactory = requestFactory;
+            _returnOrderFormCalculator = returnOrderFormCalculator;
             _market = market;
         }
 
@@ -44,33 +48,41 @@ namespace Svea.WebPay.Episerver.Checkout.OrderManagement.Steps
 
                             if (returnForm != null)
                             {
-                                var transactionDescription = string.IsNullOrWhiteSpace(returnForm.ReturnComment)
-                                    ? "Crediting payment."
-                                    : returnForm.ReturnComment;
-
                                 var paymentOrder = AsyncHelper.RunSync(() => SveaWebPayClient.PaymentAdmin.GetOrder(orderId));
+                                var delivery = paymentOrder?.Deliveries?.FirstOrDefault();
+                                var pollingTimeout = new PollingTimeout(15);
 
-                                if (paymentOrder.Deliveries.FirstOrDefault() != null)
+                                if (delivery != null)
                                 {
-                                    if (paymentOrder.Deliveries.First().Actions.CreditNewRow != null)
+                                    var paymentAmount = payment.Amount;
+                                    var returnSum = _returnOrderFormCalculator.GetReturnOrderFormTotals(returnForm, _market, orderGroup.Currency).Total;
+                                    bool creditAmountIsOtherThanSum = paymentAmount != returnSum;
+
+                                    if (creditAmountIsOtherThanSum && ActionsValidationHelper.ValidateDeliveryAction(paymentOrder, delivery.Id, DeliveryActionType.CanCreditNewRow).Item1)
                                     {
-                                        var pollingTimeout = TimeSpan.FromSeconds(3);
-                                        var creditNewOrderRowRequest = _requestFactory.GetCreditNewOrderRowRequest(payment, shipment, transactionDescription, pollingTimeout);
-                                        var creditResponseObject = AsyncHelper.RunSync(() => paymentOrder.Deliveries.First().Actions.CreditNewRow(creditNewOrderRowRequest));
+                                        var creditNewOrderRowRequest = _requestFactory.GetCreditNewOrderRowRequest((OrderForm)returnForm, payment, shipment, _market, orderGroup.Currency);
+                                        var creditResponseObject = AsyncHelper.RunSync(() => delivery.Actions.CreditNewRow(creditNewOrderRowRequest, pollingTimeout));
                                         payment.ProviderTransactionID = creditResponseObject?.Resource?.CreditId;
                                     }
-                                    else if (paymentOrder.Deliveries.First().Actions.CreditAmount != null)
+                                    else if (ActionsValidationHelper.ValidateDeliveryAction(paymentOrder, delivery.Id, DeliveryActionType.CanCreditAmount).Item1)
                                     {
                                         var creditAmountRequest = _requestFactory.GetCreditAmountRequest(payment, shipment);
-                                        var creditResponseObject = AsyncHelper.RunSync(() => paymentOrder.Deliveries.First().Actions.CreditAmount(creditAmountRequest));
+                                        var creditResponseObject = AsyncHelper.RunSync(() => delivery.Actions.CreditAmount(creditAmountRequest));
                                         payment.ProviderTransactionID = creditResponseObject.CreditId;
                                     }
-                                    else if (paymentOrder.Actions.CancelAmount != null)
+                                    else if (ActionsValidationHelper.ValidateDeliveryAction(paymentOrder, delivery.Id, DeliveryActionType.CanCreditOrderRows).Item1)
+                                    {
+                                        var creditAmountRequest = _requestFactory.GetCreditOrderRowsRequest(delivery, shipment);
+                                        var creditResponseObject = AsyncHelper.RunSync(() => delivery.Actions.CreditOrderRows(creditAmountRequest, pollingTimeout));
+                                        payment.ProviderTransactionID = creditResponseObject.Resource?.CreditId;
+                                    }
+                                    else if (ActionsValidationHelper.ValidateOrderAction(paymentOrder, OrderActionType.CanCancelAmount).Item1)
                                     {
                                         var cancelAmountRequest = _requestFactory.GetCancelAmountRequest(paymentOrder, payment, shipment);
                                         AsyncHelper.RunSync(() => paymentOrder.Actions.CancelAmount(cancelAmountRequest));
                                     }
-                                 
+
+
                                     payment.Status = PaymentStatus.Processed.ToString();
                                     AddNoteAndSaveChanges(orderGroup, payment.TransactionType, $"Credited with {payment.Amount}");
 

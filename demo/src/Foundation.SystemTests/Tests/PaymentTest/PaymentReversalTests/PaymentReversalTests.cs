@@ -15,6 +15,7 @@ namespace Foundation.SystemTests.Tests.PaymentTest.PaymentReversalTests
 
         [Test]
         [Category(TestCategory.Card)]
+        [RetryWithException(2)]
         [TestCaseSource(nameof(TestData), new object[] { false })]
         public async Task PartialReversal_With_CardAsync(Product[] products)
         {
@@ -39,19 +40,20 @@ namespace Foundation.SystemTests.Tests.PaymentTest.PaymentReversalTests
             Assert.That(order.OrderStatus, Is.EqualTo(Svea.WebPay.SDK.PaymentAdminApi.OrderStatus.Delivered));
             Assert.That(order.PaymentType, Is.EqualTo(Svea.WebPay.SDK.PaymentAdminApi.PaymentType.Card));
             Assert.That(order.AvailableActions, Is.EquivalentTo(new List<string> { "CanCancelOrder", "CanCancelAmount" }));
-            Assert.That(order.OrderAmount.Value, Is.EqualTo(_totalAmount * 100));
-            Assert.That(order.CancelledAmount.Value, Is.EqualTo(products[0].Quantity * products[0].UnitPrice * 100));
+            Assert.That(order.OrderAmount.InLowestMonetaryUnit, Is.EqualTo(_totalAmount * 100));
+            Assert.That(order.CancelledAmount.InLowestMonetaryUnit, Is.EqualTo(products[0].Quantity * products[0].UnitPrice * 100));
             
             Assert.IsNull(order.OrderRows);
 
-            Assert.That(order.Deliveries.FirstOrDefault().CreditedAmount, Is.EqualTo(0));
-            Assert.That(order.Deliveries.FirstOrDefault().DeliveryAmount, Is.EqualTo((_totalAmount * 100) - (products[0].Quantity * products[0].UnitPrice * 100)));
+            Assert.That(order.Deliveries.FirstOrDefault().CreditedAmount.InLowestMonetaryUnit, Is.EqualTo(0));
+            Assert.That(order.Deliveries.FirstOrDefault().DeliveryAmount.InLowestMonetaryUnit, Is.EqualTo((_totalAmount * 100) - (products[0].Quantity * products[0].UnitPrice * 100)));
             Assert.IsTrue(order.Deliveries.FirstOrDefault().OrderRows.Any(item => item.Name.ToUpper() == products[0].Name.ToUpper()));
             Assert.IsTrue(order.Deliveries.FirstOrDefault().OrderRows.Any(item => item.Name.ToUpper() == products[1].Name.ToUpper()));
         }
 
         [Test]
         [Category(TestCategory.Card)]
+        [RetryWithException(2)]
         [TestCaseSource(nameof(TestData), new object[] { false })]
         public async Task ConsecutivePartialReversal_With_CardAsync(Product[] products)
         {
@@ -79,19 +81,20 @@ namespace Foundation.SystemTests.Tests.PaymentTest.PaymentReversalTests
             Assert.That(order.OrderStatus, Is.EqualTo(Svea.WebPay.SDK.PaymentAdminApi.OrderStatus.Delivered));
             Assert.That(order.PaymentType, Is.EqualTo(Svea.WebPay.SDK.PaymentAdminApi.PaymentType.Card));
             Assert.That(order.AvailableActions, Is.EquivalentTo(new List<string> { "CanCancelOrder", "CanCancelAmount" }));
-            Assert.That(order.OrderAmount.Value, Is.EqualTo(_totalAmount * 100));
-            Assert.That(order.CancelledAmount.Value, Is.EqualTo(products.Sum(x => x.Quantity * x.UnitPrice * 100)));
+            Assert.That(order.OrderAmount.InLowestMonetaryUnit, Is.EqualTo(_totalAmount * 100));
+            Assert.That(order.CancelledAmount.InLowestMonetaryUnit, Is.EqualTo(products.Sum(x => x.Quantity * x.UnitPrice)*100));
 
             Assert.IsNull(order.OrderRows);
 
-            Assert.That(order.Deliveries.FirstOrDefault().CreditedAmount, Is.EqualTo(0));
-            Assert.That(order.Deliveries.FirstOrDefault().DeliveryAmount, Is.EqualTo( (_totalAmount * 100) - products.Sum(x => x.Quantity * x.UnitPrice * 100)));
+            Assert.That(order.Deliveries.FirstOrDefault().CreditedAmount.InLowestMonetaryUnit, Is.EqualTo(0));
+            Assert.That(order.Deliveries.FirstOrDefault().DeliveryAmount.InLowestMonetaryUnit, Is.EqualTo( (_totalAmount * 100) - products.Sum(x => x.Quantity * x.UnitPrice * 100)));
             Assert.IsTrue(order.Deliveries.FirstOrDefault().OrderRows.Any(item => item.Name.ToUpper() == products[0].Name.ToUpper()));
             Assert.IsTrue(order.Deliveries.FirstOrDefault().OrderRows.Any(item => item.Name.ToUpper() == products[1].Name.ToUpper()));
         }
 
         [Test]
         [Category(TestCategory.Card)]
+        [RetryWithException(2)]
         [TestCaseSource(nameof(TestData), new object[] { false })]
         public async Task FullReversal_With_CardAsync(Product[] products)
         {
@@ -120,8 +123,8 @@ namespace Foundation.SystemTests.Tests.PaymentTest.PaymentReversalTests
             Assert.That(order.OrderStatus, Is.EqualTo(Svea.WebPay.SDK.PaymentAdminApi.OrderStatus.Cancelled));
             Assert.That(order.PaymentType, Is.EqualTo(Svea.WebPay.SDK.PaymentAdminApi.PaymentType.Card));
             Assert.That(order.AvailableActions.Count, Is.EqualTo(0));
-            Assert.That(order.OrderAmount.Value, Is.EqualTo(_totalAmount * 100));
-            Assert.That(order.CancelledAmount.Value, Is.EqualTo(_totalAmount * 100));
+            Assert.That(order.OrderAmount.InLowestMonetaryUnit, Is.EqualTo(_totalAmount * 100));
+            Assert.That(order.CancelledAmount.InLowestMonetaryUnit, Is.EqualTo(_totalAmount * 100));
 
             Assert.IsTrue(order.OrderRows.Any(item => item.Name.ToUpper() == products[0].Name.ToUpper()));
             Assert.IsTrue(order.OrderRows.Any(item => item.Name.ToUpper() == products[1].Name.ToUpper()));
@@ -131,6 +134,7 @@ namespace Foundation.SystemTests.Tests.PaymentTest.PaymentReversalTests
 
         [Test]
         [Category(TestCategory.Card)]
+        [RetryWithException(2)]
         [TestCaseSource(nameof(TestData), new object[] { false })]
         public async Task PartialReversal_With_InvoiceAsync(Product[] products)
         {
@@ -155,23 +159,24 @@ namespace Foundation.SystemTests.Tests.PaymentTest.PaymentReversalTests
             Assert.That(order.OrderStatus, Is.EqualTo(Svea.WebPay.SDK.PaymentAdminApi.OrderStatus.Delivered));
             Assert.That(order.PaymentType, Is.EqualTo(Svea.WebPay.SDK.PaymentAdminApi.PaymentType.Invoice));
             Assert.That(order.AvailableActions.Count, Is.EqualTo(0));
-            Assert.That(order.OrderAmount.Value, Is.EqualTo(_totalAmount * 100));
-            Assert.That(order.CancelledAmount.Value, Is.EqualTo(0));
+            Assert.That(order.OrderAmount.InLowestMonetaryUnit, Is.EqualTo(_totalAmount * 100));
+            Assert.That(order.CancelledAmount.InLowestMonetaryUnit, Is.EqualTo(0));
 
             Assert.That(order.OrderRows.Count, Is.EqualTo(0));
 
             var delivery = order.Deliveries.First();
-            Assert.That(delivery.CreditedAmount, Is.EqualTo(products[0].UnitPrice * products[0].Quantity * 100));
-            Assert.That(delivery.DeliveryAmount, Is.EqualTo(_totalAmount * 100));
+            Assert.That(delivery.CreditedAmount.InLowestMonetaryUnit, Is.EqualTo(products[0].UnitPrice * products[0].Quantity * 100));
+            Assert.That(delivery.DeliveryAmount.InLowestMonetaryUnit, Is.EqualTo(_totalAmount * 100));
             Assert.That(delivery.AvailableActions, Is.EquivalentTo(new List<string> { "CanCreditNewRow", "CanCreditOrderRows" }));
             Assert.That(delivery.Credits.Count, Is.EqualTo(1));
-            Assert.That(delivery.Credits[0].Amount, Is.EqualTo(products[0].UnitPrice * products[0].Quantity * -100));
+            Assert.That(delivery.Credits[0].Amount.InLowestMonetaryUnit, Is.EqualTo(-(products[0].UnitPrice * products[0].Quantity) * 100));
             Assert.IsTrue(delivery.OrderRows.Any(item => item.Name.ToUpper() == products[0].Name.ToUpper()));
             Assert.IsTrue(delivery.OrderRows.Any(item => item.Name.ToUpper() == products[1].Name.ToUpper()));
         }
 
         [Test]
         [Category(TestCategory.Card)]
+        [RetryWithException(2)]
         [TestCaseSource(nameof(TestData), new object[] { false })]
         public async Task FullReversal_With_InvoiceAsync(Product[] products)
         {
@@ -200,17 +205,17 @@ namespace Foundation.SystemTests.Tests.PaymentTest.PaymentReversalTests
             Assert.That(order.OrderStatus, Is.EqualTo(Svea.WebPay.SDK.PaymentAdminApi.OrderStatus.Delivered));
             Assert.That(order.PaymentType, Is.EqualTo(Svea.WebPay.SDK.PaymentAdminApi.PaymentType.Invoice));
             Assert.That(order.AvailableActions.Count, Is.EqualTo(0));
-            Assert.That(order.OrderAmount.Value, Is.EqualTo(_totalAmount * 100));
-            Assert.That(order.CancelledAmount.Value, Is.EqualTo(0));
+            Assert.That(order.OrderAmount.InLowestMonetaryUnit, Is.EqualTo(_totalAmount * 100));
+            Assert.That(order.CancelledAmount.InLowestMonetaryUnit, Is.EqualTo(0));
 
             Assert.That(order.OrderRows.Count, Is.EqualTo(0));
 
             var delivery = order.Deliveries.First();
-            Assert.That(delivery.CreditedAmount, Is.EqualTo(_totalAmount * 100));
-            Assert.That(delivery.DeliveryAmount, Is.EqualTo(_totalAmount * 100));
+            Assert.That(delivery.CreditedAmount.InLowestMonetaryUnit, Is.EqualTo(_totalAmount * 100));
+            Assert.That(delivery.DeliveryAmount.InLowestMonetaryUnit, Is.EqualTo(_totalAmount * 100));
             Assert.That(delivery.AvailableActions.Count, Is.EqualTo(0));
             Assert.That(delivery.Credits.Count, Is.EqualTo(1));
-            Assert.That(delivery.Credits[0].Amount, Is.EqualTo(_totalAmount * -100));
+            Assert.That(delivery.Credits[0].Amount.InLowestMonetaryUnit, Is.EqualTo(-_totalAmount * 100));
         }
     }
 }

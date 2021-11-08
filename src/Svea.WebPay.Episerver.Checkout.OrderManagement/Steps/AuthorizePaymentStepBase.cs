@@ -22,7 +22,6 @@ namespace Svea.WebPay.Episerver.Checkout.OrderManagement.Steps
                 if (Successor != null)
                 {
                     paymentStepResult = Successor.Process(payment, orderForm, orderGroup, shipment);
-                    paymentStepResult.Status = true;
                     paymentStepResult.Status = Successor != null && paymentStepResult.Status;
                 }
 

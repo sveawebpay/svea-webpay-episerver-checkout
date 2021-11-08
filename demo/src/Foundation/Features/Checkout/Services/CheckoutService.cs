@@ -20,12 +20,15 @@ using Mediachase.Commerce.Orders.Managers;
 using Mediachase.Commerce.Security;
 using Mediachase.Web.Console.Common;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Globalization;
 using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
 using System.Web.Mvc;
+using Svea.WebPay.Episerver.Checkout;
 using Svea.WebPay.Episerver.Checkout.Common;
 using Svea.WebPay.Episerver.Checkout.Common.Extensions;
 using Svea.WebPay.SDK.CheckoutApi;
@@ -49,6 +52,7 @@ namespace Foundation.Features.Checkout.Services
         private readonly ILoyaltyService _loyaltyService;
         private readonly ISettingsService _settingsService;
         private readonly ICartService _cartService;
+        private readonly ISveaWebPayCheckoutService _sveaWebPayCheckoutService;
 
         public AuthenticatedPurchaseValidation AuthenticatedPurchaseValidation { get; private set; }
         public AnonymousPurchaseValidation AnonymousPurchaseValidation { get; private set; }
@@ -66,7 +70,8 @@ namespace Foundation.Features.Checkout.Services
             IPromotionEngine promotionEngine,
             ILoyaltyService loyaltyService,
             ISettingsService settingsService,
-            ICartService cartService)
+            ICartService cartService,
+            ISveaWebPayCheckoutService sveaWebPayCheckoutService)
         {
             _addressBookService = addressBookService;
             _orderGroupFactory = orderGroupFactory;
@@ -85,6 +90,7 @@ namespace Foundation.Features.Checkout.Services
             CheckoutAddressHandling = new CheckoutAddressHandling(_addressBookService);
             _settingsService = settingsService;
             _cartService = cartService;
+            _sveaWebPayCheckoutService = sveaWebPayCheckoutService;
         }
 
         public virtual void UpdateShippingMethods(ICart cart, IList<ShipmentViewModel> shipmentViewModels)
@@ -403,8 +409,62 @@ namespace Foundation.Features.Checkout.Services
             cart.Notes.Add(note);
         }
         #endregion
+        protected static readonly ConcurrentDictionary<string, DateTime> ProcessingOrdersCache = new ConcurrentDictionary<string, DateTime>();
 
+        public IPurchaseOrder GetOrCreatePurchaseOrder(int orderGroupId, long sveaWebPayOrderId, out HttpStatusCode status)
+        {
+            var key = $"{orderGroupId}-{sveaWebPayOrderId}";
+            if (ProcessingOrdersCache.TryAdd(key, DateTime.UtcNow))
+            {
+                // Check if the order has been created already
+                var purchaseOrder = _sveaWebPayCheckoutService.GetPurchaseOrderBySveaWebPayOrderId(sveaWebPayOrderId.ToString());
+                if (purchaseOrder != null)
+                {
+                    status = HttpStatusCode.OK;
+                    ProcessingOrdersCache.TryRemove(key, out DateTime value1);
+                    return purchaseOrder;
+                }
 
+                // Check if we still have a cart and can create an order
+                var cart = _orderRepository.Load<ICart>(orderGroupId);
+                if (cart == null)
+                {
+                    _log.Log(Level.Information, $"Purchase order or cart with orderId {orderGroupId} not found");
+                    status = HttpStatusCode.NotFound;
+                    ProcessingOrdersCache.TryRemove(key, out DateTime value2);
+                    return null;
+                }
+
+                var cartSveaWebPayOrderId = cart.Properties[Constants.SveaWebPayOrderIdField]?.ToString();
+                if (cartSveaWebPayOrderId == null || !cartSveaWebPayOrderId.Equals(sveaWebPayOrderId.ToString()))
+                {
+                    _log.Log(Level.Information, $"cart: {orderGroupId} with svea webpay order id {cartSveaWebPayOrderId} does not equal svea webpay order id {sveaWebPayOrderId} sent in the request");
+                    status = HttpStatusCode.Conflict;
+                    ProcessingOrdersCache.TryRemove(key, out DateTime value3);
+                    return null;
+                }
+
+                var order = _sveaWebPayCheckoutService.GetOrder(cart);
+                if (!order.Status.Equals(CheckoutOrderStatus.Final))
+                {
+                    // Won't create order, Svea webpay checkout not complete
+                    _log.Log(Level.Information, $"Svea webpay order id {cartSveaWebPayOrderId} not completed");
+                    status = HttpStatusCode.NotFound;
+                    ProcessingOrdersCache.TryRemove(key, out DateTime value4);
+                    return null;
+                }
+
+                purchaseOrder = CreatePurchaseOrderForSveaWebPay(sveaWebPayOrderId, order, cart);
+                status = HttpStatusCode.OK;
+                ProcessingOrdersCache.TryRemove(key, out DateTime value5);
+                return purchaseOrder;
+            }
+
+            _log.Log(Level.Information, $"Already processing orderGroupId: {orderGroupId} orderId: {sveaWebPayOrderId}");
+            status = HttpStatusCode.Conflict;
+            ProcessingOrdersCache.TryRemove(key, out DateTime value6);
+            return null;
+        }
 
         public IPurchaseOrder CreatePurchaseOrderForSveaWebPay(long sveaWebPayOrderId, Data order, ICart cart)
         {
@@ -492,6 +552,5 @@ namespace Foundation.Features.Checkout.Services
                 return purchaseOrder;
             }
         }
-
     }
 }

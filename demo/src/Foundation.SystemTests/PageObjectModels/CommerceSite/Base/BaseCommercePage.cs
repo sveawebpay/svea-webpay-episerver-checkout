@@ -1,7 +1,5 @@
 ﻿using Atata;
 using Foundation.SystemTests.PageObjectModels.CommerceSite.Checkout;
-using Foundation.SystemTests.PageObjectModels.CommerceSite.Products;
-using System.IO;
 
 namespace Foundation.SystemTests.PageObjectModels.CommerceSite.Base
 {

@@ -28,7 +28,7 @@ namespace Foundation.Features.Header
         public ActionResult GetHeader(HomePage homePage)
         {
             var content = _contentRouteHelper.Content;
-            
+
             if (string.IsNullOrWhiteSpace(_pluginVersion))
             {
                 var pluginAssembly = typeof(Startup).Assembly;
@@ -44,7 +44,6 @@ namespace Foundation.Features.Header
             }
 
             var headerViewModel = _headerViewModelFactory.CreateHeaderViewModel(content, homePage);
-
             headerViewModel.PluginVersion = _pluginVersion;
             headerViewModel.SdkVersion = _sdkVersion;
 

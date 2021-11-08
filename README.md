@@ -1,7 +1,7 @@
 # Svea.WebPay.Episerver.Checkout
 
 ## Links
-[Test-Data](https://www.svea.com/globalassets/sweden/foretag/betallosningar/e-handel/integrationspaket-logos-and-doc.-integration-test-instructions-webpay/test-instructions-webpay-partners..pdf), In the documentation it says checkoutID, it's the same as later called MerchantId.  
+[Test-Data](https://www.svea.com/globalassets/sweden/foretag/betallosningar/e-handel/integrationspaket-logos-and-doc.-integration-test-instructions-webpay/testuppgifter-webpay_.pdf), In the documentation it says checkoutID, it's the same as later called MerchantId.  
 [Svea Payment Admin](https://paymentadminstage.svea.com/)  
 [Svea SDK](https://github.com/sveawebpay/svea-sdk-dotnet)
 
@@ -229,11 +229,53 @@ namespace Foundation.Features.Checkout.Payments
 
 ```
 
-Add following method for creating Purchase Order in e.g. Foundation/Features/Checkout/Services/CheckoutService.cs To be able to use this code you need to constructor inject ICartService.
+Add following methods for creating Purchase Order in e.g. Foundation/Features/Checkout/Services/CheckoutService.cs To be able to use this code you need to constructor inject ICartService.
 
 
 
 ```CSharp
+
+public IPurchaseOrder GetOrCreatePurchaseOrder(int orderGroupId, long sveaWebPayOrderId, out HttpStatusCode status)
+{
+    // Check if the order has been created already
+    var purchaseOrder = _sveaWebPayCheckoutService.GetPurchaseOrderBySveaWebPayOrderId(sveaWebPayOrderId.ToString());
+    if (purchaseOrder != null)
+    {
+        status = HttpStatusCode.OK;
+        return purchaseOrder;
+    }
+
+    // Check if we still have a cart and can create an order
+    var cart = _orderRepository.Load<ICart>(orderGroupId);
+    if (cart == null)
+    {
+        _log.Log(Level.Information, $"Purchase order or cart with orderId {orderGroupId} not found");
+        status = HttpStatusCode.NotFound;
+        return null;
+    }
+
+    var cartSveaWebPayOrderId = cart.Properties[Constants.SveaWebPayOrderIdField]?.ToString();
+    if (cartSveaWebPayOrderId == null || !cartSveaWebPayOrderId.Equals(sveaWebPayOrderId.ToString()))
+    {
+        _log.Log(Level.Information, $"cart: {orderGroupId} with svea webpay order id {cartSveaWebPayOrderId} does not equal svea webpay order id {sveaWebPayOrderId} sent in the request");
+        status = HttpStatusCode.Conflict;
+        return null;
+    }
+
+    var order = _sveaWebPayCheckoutService.GetOrder(cart);
+    if (!order.Status.Equals(CheckoutOrderStatus.Final))
+    {
+        // Won't create order, Svea webpay checkout not complete
+        _log.Log(Level.Information, $"Svea webpay order id {cartSveaWebPayOrderId} not completed");
+        status = HttpStatusCode.NotFound;
+        return null;
+    }
+
+    purchaseOrder = CreatePurchaseOrderForSveaWebPay(sveaWebPayOrderId, order, cart);
+    status = HttpStatusCode.OK;
+    return purchaseOrder;
+}
+
 public IPurchaseOrder CreatePurchaseOrderForSveaWebPay(long sveaWebPayOrderId, Data order, ICart cart)
         {
             // Clean up payments in cart on payment provider site.
@@ -427,47 +469,6 @@ namespace Foundation.Features.Checkout
 
             return new StatusCodeResult(status, this);
         }
-
-        private IPurchaseOrder GetOrCreatePurchaseOrder(int orderGroupId, long sveaWebPayOrderId, out HttpStatusCode status)
-        {
-            // Check if the order has been created already
-            var purchaseOrder = _sveaWebPayCheckoutService.GetPurchaseOrderBySveaWebPayOrderId(sveaWebPayOrderId.ToString());
-            if (purchaseOrder != null)
-            {
-                status = HttpStatusCode.OK;
-                return purchaseOrder;
-            }
-
-            // Check if we still have a cart and can create an order
-            var cart = _orderRepository.Load<ICart>(orderGroupId);
-            if (cart == null)
-            {
-                _log.Log(Level.Information, $"Purchase order or cart with orderId {orderGroupId} not found");
-                status = HttpStatusCode.NotFound;
-                return null;
-            }
-
-            var cartSveaWebPayOrderId = cart.Properties[Constants.SveaWebPayOrderIdField]?.ToString();
-            if (cartSveaWebPayOrderId == null || !cartSveaWebPayOrderId.Equals(sveaWebPayOrderId.ToString()))
-            {
-                _log.Log(Level.Information, $"cart: {orderGroupId} with svea webpay order id {cartSveaWebPayOrderId} does not equal svea webpay order id {sveaWebPayOrderId} sent in the request");
-                status = HttpStatusCode.Conflict;
-                return null;
-            }
-
-            var order = _sveaWebPayCheckoutService.GetOrder(cart);
-            if (!order.Status.Equals(CheckoutOrderStatus.Final))
-            {
-                // Won't create order, Svea webpay checkout not complete
-                _log.Log(Level.Information, $"Svea webpay order id {cartSveaWebPayOrderId} not completed");
-                status = HttpStatusCode.NotFound;
-                return null;
-            }
-
-            purchaseOrder = _checkoutService.CreatePurchaseOrderForSveaWebPay(sveaWebPayOrderId, order, cart);
-            status = HttpStatusCode.OK;
-            return purchaseOrder;
-        }
     }
 }
 
@@ -503,11 +504,6 @@ Add view Foundation\\Features\\MyAccount\\OrderConfirmation\\_SveaWebPayCheckout
 	</p>
 </div>
 ```
-
----
-
-## Known issues
-* [DiscountPercent on a order row can't contain any fractions](https://checkoutapi.svea.com/docs/html/reference/web-api/data-types/orderrow.htm), therefore if entering a discount with decimals it won't work. However a new version of the API will soon be released that adds a DiscountAmount property instead.
 
 ---
 ## Misc
