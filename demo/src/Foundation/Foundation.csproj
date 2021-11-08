@@ -1766,6 +1766,7 @@
     <Content Include="Assets\icons\cms\blocks\CMS-icon-block-30.png" />
     <Content Include="Assets\icons\cms\blocks\CMS-icon-block-31.png" />
     <Content Include="Assets\icons\cms\blocks\CMS-icon-block-32.png" />
+    <Content Include="Assets\icons\cms\blocks\CMS-icon-block-33.png" />
     <Content Include="Assets\icons\content\CarouselBlock.PNG" />
     <Content Include="Assets\icons\content\CategoryPage.PNG" />
     <Content Include="Assets\icons\content\ContinentsFilterBlock.PNG" />
@@ -1787,6 +1788,7 @@
     <Content Include="Assets\icons\flags\sweden.svg" />
     <Content Include="Assets\icons\flags\united-kingdom.svg" />
     <Content Include="Assets\icons\flags\united-states-of-america.svg" />
+    <Content Include="Assets\icons\gfx\bingmap-position.png" />
     <Content Include="Assets\icons\gfx\block-thumbnail-parking.png" />
     <Content Include="Assets\icons\gfx\block-type-thumbnail-rss.png" />
     <Content Include="Assets\icons\gfx\carouselbackground.png" />
@@ -1816,6 +1818,7 @@
     <Content Include="Assets\icons\gfx\productLandingv2.png" />
     <Content Include="Assets\icons\gfx\searchbutton.png" />
     <Content Include="Assets\icons\gfx\searchbuttonsmall.png" />
+    <Content Include="Assets\icons\gfx\searchicon.png" />
     <Content Include="Assets\icons\gfx\track.jpg" />
     <Content Include="Assets\icons\cms\blocks\accordion.png" />
     <Content Include="Assets\icons\cms\blocks\CMS-icon-block-02.png" />
@@ -1994,7 +1997,6 @@
     <Content Include="lang\EPiServer.ContentApi.OAuth.UI_en.xml" />
     <Content Include="lang\Episerver.ContentManager_EN.xml" />
     <Content Include="lang\Optimizely.Labs.MarketingAutomationIntegration.ODP.Forms_EN.xml" />
-    <Content Include="license.txt" />
     <Content Include="modules\_protected\CookieDropBlock\Images\block-type-thumbnail-cookiedrop.png" />
     <Content Include="modules\_protected\EPiServer.ContentDeliveryApi.OAuth\ContentApiUserSettings.ascx" />
     <Content Include="modules\_protected\EPiServer.Forms.Samples\3.7.0\ClientResources\Criteria\SubmittedValue.js" />
