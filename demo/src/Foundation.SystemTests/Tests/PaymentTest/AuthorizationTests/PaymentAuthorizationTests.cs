@@ -1,4 +1,5 @@
-﻿using Foundation.SystemTests.Tests.Base;
+﻿using System;
+using Foundation.SystemTests.Tests.Base;
 using Foundation.SystemTests.Tests.Helpers;
 using NUnit.Framework;
 using System.Collections.Generic;
@@ -38,16 +39,16 @@ namespace Foundation.SystemTests.Tests.PaymentTest
             Assert.That(order.OrderStatus, Is.EqualTo(Svea.WebPay.SDK.PaymentAdminApi.OrderStatus.Open));
             Assert.That(order.PaymentType, Is.EqualTo(Svea.WebPay.SDK.PaymentAdminApi.PaymentType.Card));
             Assert.That(order.AvailableActions, Is.EquivalentTo(new List<string> { "CanDeliverOrder", "CanCancelOrder", "CanCancelAmount" }));
-            Assert.That(order.CancelledAmount, Is.EqualTo(0));
+            Assert.That(order.CancelledAmount.InLowestMonetaryUnit, Is.EqualTo(0));
 
-            Assert.That(order.OrderRows.Count, Is.EqualTo(products.Count() + 1));
+            Assert.That(order.OrderRows.Count(x => !x.ArticleNumber.Equals("SHIPPING", StringComparison.InvariantCultureIgnoreCase) && !x.ArticleNumber.Equals("DISCOUNT", StringComparison.InvariantCultureIgnoreCase)), Is.EqualTo(products.Count()));
 
             for (var i = 0; i < products.Count(); i++)
             {
                 var orderRow = order.OrderRows.ElementAt(i);
                 Assert.That(orderRow.Name.ToUpper(), Is.EqualTo(products[i].Name.ToUpper()));
-                Assert.That(orderRow.Quantity, Is.EqualTo(products[i].Quantity));
-                Assert.That(orderRow.UnitPrice, Is.EqualTo((products[i].UnitPrice + products[i].UnitPrice * 0.25m)));
+                Assert.That(orderRow.Quantity.InLowestMonetaryUnit, Is.EqualTo(products[i].Quantity * 100));
+                Assert.That(orderRow.UnitPrice.InLowestMonetaryUnit, Is.EqualTo((products[i].UnitPrice + products[i].UnitPrice * 0.25m) * 100));
             }
 
             Assert.IsNull(order.Deliveries);

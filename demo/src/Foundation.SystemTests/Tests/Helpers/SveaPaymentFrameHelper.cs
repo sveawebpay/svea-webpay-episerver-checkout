@@ -42,10 +42,6 @@ namespace Foundation.SystemTests.Tests.Helpers
 
         public static SveaPaymentFramePage Pay(this SveaPaymentFramePage page, Checkout.Option checkout = Checkout.Option.Identification, Entity.Option entity = Entity.Option.Private, PaymentMethods.Option paymentMethod = PaymentMethods.Option.Card, string amount = null)
         {
-            page
-            .PaymentMethods.TotalAmount.IsVisible.WaitTo.BeTrue()
-            .PaymentMethods.TotalAmount.Should.ContainAmount(amount);
-
             if (entity == Entity.Option.Company && checkout == Checkout.Option.Identification)
             {
                 page.PaymentMethods.Reference.Set(TestDataService.Reference);

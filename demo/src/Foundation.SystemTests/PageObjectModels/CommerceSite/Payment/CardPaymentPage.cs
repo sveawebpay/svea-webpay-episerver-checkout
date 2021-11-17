@@ -12,10 +12,10 @@ namespace Foundation.SystemTests.PageObjectModels.Payment
         [FindByDescendantAttribute("value", values: "debit")]
         public Label<_> DebitCard { get; set; }
 
-        [FindById("CardNumber")] 
+        [FindById("CardNumber")]
         public TextInput<_> CardNumber { get; set; }
 
-        [FindById("Expiry")]
+        [FindById("expdate")]
         public TextInput<_> Expiry { get; set; }
 
         [FindById("CVV")]
@@ -23,7 +23,7 @@ namespace Foundation.SystemTests.PageObjectModels.Payment
 
         [FindById("AmountDiv")]
         public TextInput<_> TotalAmount { get; set; }
-        
+
         [FindById("submit-button")]
         public Button<_> Submit { get; set; }
 
