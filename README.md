@@ -200,7 +200,7 @@ namespace Foundation.Features.Checkout.Payments
                 CheckoutConfiguration = _sveaWebPayCheckoutService.LoadCheckoutConfiguration(market, currentLanguage.TwoLetterISOLanguageName);
 
                 VerifyCartHasShippingCountry(cart);
-                var paymentOrder = _sveaWebPayCheckoutService.CreateOrUpdateOrder(cart, _languageService.GetCurrentLanguage());
+                var paymentOrder = AsyncHelper.RunSync(() => _sveaWebPayCheckoutService.CreateOrUpdateOrder(cart, _languageService.GetCurrentLanguage(), true));
                 HtmlSnippet = paymentOrder?.Gui.Snippet;
                 _isInitalized = paymentOrder != null;
             }
@@ -234,134 +234,149 @@ Add following methods for creating Purchase Order in e.g. Foundation/Features/Ch
 
 
 ```CSharp
+protected static readonly ConcurrentDictionary<string, DateTime> ProcessingOrdersCache = new ConcurrentDictionary<string, DateTime>();
 
 public IPurchaseOrder GetOrCreatePurchaseOrder(int orderGroupId, long sveaWebPayOrderId, out HttpStatusCode status)
 {
-    // Check if the order has been created already
-    var purchaseOrder = _sveaWebPayCheckoutService.GetPurchaseOrderBySveaWebPayOrderId(sveaWebPayOrderId.ToString());
-    if (purchaseOrder != null)
+    var key = $"{orderGroupId}-{sveaWebPayOrderId}";
+    if (ProcessingOrdersCache.TryAdd(key, DateTime.UtcNow))
     {
+        // Check if the order has been created already
+        var purchaseOrder = _sveaWebPayCheckoutService.GetPurchaseOrderBySveaWebPayOrderId(sveaWebPayOrderId.ToString());
+        if (purchaseOrder != null)
+        {
+            status = HttpStatusCode.OK;
+            ProcessingOrdersCache.TryRemove(key, out DateTime value1);
+            return purchaseOrder;
+        }
+
+        // Check if we still have a cart and can create an order
+        var cart = _orderRepository.Load<ICart>(orderGroupId);
+        if (cart == null)
+        {
+            _log.Log(Level.Information, $"Purchase order or cart with orderId {orderGroupId} not found");
+            status = HttpStatusCode.NotFound;
+            ProcessingOrdersCache.TryRemove(key, out DateTime value2);
+            return null;
+        }
+
+        var cartSveaWebPayOrderId = cart.Properties[Constants.SveaWebPayOrderIdField]?.ToString();
+        if (cartSveaWebPayOrderId == null || !cartSveaWebPayOrderId.Equals(sveaWebPayOrderId.ToString()))
+        {
+            _log.Log(Level.Information, $"cart: {orderGroupId} with svea webpay order id {cartSveaWebPayOrderId} does not equal svea webpay order id {sveaWebPayOrderId} sent in the request");
+            status = HttpStatusCode.Conflict;
+            ProcessingOrdersCache.TryRemove(key, out DateTime value3);
+            return null;
+        }
+
+        var order = AsyncHelper.RunSync(() => _sveaWebPayCheckoutService.GetOrder(cart));
+        if (!order.Status.Equals(CheckoutOrderStatus.Final))
+        {
+            // Won't create order, Svea webpay checkout not complete
+            _log.Log(Level.Information, $"Svea webpay order id {cartSveaWebPayOrderId} not completed");
+            status = HttpStatusCode.NotFound;
+            ProcessingOrdersCache.TryRemove(key, out DateTime value4);
+            return null;
+        }
+
+        purchaseOrder = CreatePurchaseOrderForSveaWebPay(sveaWebPayOrderId, order, cart);
         status = HttpStatusCode.OK;
+        ProcessingOrdersCache.TryRemove(key, out DateTime value5);
         return purchaseOrder;
     }
 
-    // Check if we still have a cart and can create an order
-    var cart = _orderRepository.Load<ICart>(orderGroupId);
-    if (cart == null)
-    {
-        _log.Log(Level.Information, $"Purchase order or cart with orderId {orderGroupId} not found");
-        status = HttpStatusCode.NotFound;
-        return null;
-    }
-
-    var cartSveaWebPayOrderId = cart.Properties[Constants.SveaWebPayOrderIdField]?.ToString();
-    if (cartSveaWebPayOrderId == null || !cartSveaWebPayOrderId.Equals(sveaWebPayOrderId.ToString()))
-    {
-        _log.Log(Level.Information, $"cart: {orderGroupId} with svea webpay order id {cartSveaWebPayOrderId} does not equal svea webpay order id {sveaWebPayOrderId} sent in the request");
-        status = HttpStatusCode.Conflict;
-        return null;
-    }
-
-    var order = _sveaWebPayCheckoutService.GetOrder(cart);
-    if (!order.Status.Equals(CheckoutOrderStatus.Final))
-    {
-        // Won't create order, Svea webpay checkout not complete
-        _log.Log(Level.Information, $"Svea webpay order id {cartSveaWebPayOrderId} not completed");
-        status = HttpStatusCode.NotFound;
-        return null;
-    }
-
-    purchaseOrder = CreatePurchaseOrderForSveaWebPay(sveaWebPayOrderId, order, cart);
-    status = HttpStatusCode.OK;
-    return purchaseOrder;
+    _log.Log(Level.Information, $"Already processing orderGroupId: {orderGroupId} orderId: {sveaWebPayOrderId}");
+    status = HttpStatusCode.Conflict;
+    ProcessingOrdersCache.TryRemove(key, out DateTime value6);
+    return null;
 }
 
 public IPurchaseOrder CreatePurchaseOrderForSveaWebPay(long sveaWebPayOrderId, Data order, ICart cart)
-        {
-            // Clean up payments in cart on payment provider site.
-            foreach (var form in cart.Forms)
-            {
-                form.Payments.Clear();
-            }
+{
+    // Clean up payments in cart on payment provider site.
+    foreach (var form in cart.Forms)
+    {
+        form.Payments.Clear();
+    }
 
-            var languageid = cart.Properties[Constants.Culture].ToString();
-            var paymentRow = PaymentManager.GetPaymentMethodBySystemName(Constants.SveaWebPayCheckoutSystemKeyword, languageid, cart.MarketId.Value).PaymentMethod.FirstOrDefault();
+    var languageid = cart.Properties[Constants.Culture].ToString();
+    var paymentRow = PaymentManager.GetPaymentMethodBySystemName(Constants.SveaWebPayCheckoutSystemKeyword, languageid, cart.MarketId.Value).PaymentMethod.FirstOrDefault();
 
-            var payment = cart.CreatePayment(_orderGroupFactory);
-            payment.PaymentType = PaymentType.Other;
-            payment.PaymentMethodId = paymentRow.PaymentMethodId;
-            payment.PaymentMethodName = Constants.SveaWebPayCheckoutSystemKeyword;
-            payment.Amount = cart.GetTotal(_orderGroupCalculator).Amount;
-            
-            var isSaleTransaction = order.Payment.PaymentMethodType == PaymentMethodType.DirectBank || order.Payment.PaymentMethodType == PaymentMethodType.Trustly || order.Payment.PaymentMethodType == PaymentMethodType.Swish;
+    var payment = cart.CreatePayment(_orderGroupFactory);
+    payment.PaymentType = PaymentType.Other;
+    payment.PaymentMethodId = paymentRow.PaymentMethodId;
+    payment.PaymentMethodName = Constants.SveaWebPayCheckoutSystemKeyword;
+    payment.Amount = cart.GetTotal(_orderGroupCalculator).Amount;
 
-            payment.Status = isSaleTransaction
-                ? PaymentStatus.Processed.ToString()
-                : PaymentStatus.Pending.ToString();
+    var isSaleTransaction = order.Payment.PaymentMethodType == PaymentMethodType.DirectBank || order.Payment.PaymentMethodType == PaymentMethodType.Trustly || order.Payment.PaymentMethodType == PaymentMethodType.Swish;
 
-            payment.TransactionType = isSaleTransaction
-                ? TransactionType.Sale.ToString()
-                : TransactionType.Authorization.ToString();
+    payment.Status = isSaleTransaction
+        ? PaymentStatus.Processed.ToString()
+        : PaymentStatus.Pending.ToString();
 
-            cart.AddPayment(payment, _orderGroupFactory);
-            cart.AddNote($"Payed with {order.Payment?.PaymentMethodType?.ToString()}", $"Payed with {order.Payment?.PaymentMethodType?.ToString()}");
+    payment.TransactionType = isSaleTransaction
+        ? TransactionType.Sale.ToString()
+        : TransactionType.Authorization.ToString();
 
-            var billingAddress = new AddressModel
-            {
-                Name = $"{order.BillingAddress.StreetAddress}{order.BillingAddress.PostalCode}{order.BillingAddress.City}",
-                FirstName = order.BillingAddress.FullName,
-                LastName = order.BillingAddress.LastName,
-                Email = order.EmailAddress,
-                DaytimePhoneNumber = order.PhoneNumber,
-                Line1 = order.BillingAddress.StreetAddress,
-                PostalCode = order.BillingAddress.PostalCode,
-                City = order.BillingAddress.City,
-                CountryCode = order.BillingAddress.CountryCode
-            };
+    cart.AddPayment(payment, _orderGroupFactory);
+    cart.AddNote($"Payed with {order.Payment?.PaymentMethodType?.ToString()}", $"Payed with {order.Payment?.PaymentMethodType?.ToString()}");
 
-            payment.BillingAddress = _addressBookService.ConvertToAddress(billingAddress, cart);
+    var billingAddress = new AddressModel
+    {
+        Name = $"{order.BillingAddress.StreetAddress}{order.BillingAddress.PostalCode}{order.BillingAddress.City}",
+        FirstName = order.BillingAddress.FullName,
+        LastName = order.BillingAddress.LastName,
+        Email = order.EmailAddress,
+        DaytimePhoneNumber = order.PhoneNumber,
+        Line1 = order.BillingAddress.StreetAddress,
+        PostalCode = order.BillingAddress.PostalCode,
+        City = order.BillingAddress.City,
+        CountryCode = order.BillingAddress.CountryCode
+    };
 
-            var shippingAddress = new AddressModel
-            {
-                Name = $"{order.ShippingAddress.StreetAddress}{order.ShippingAddress.PostalCode}{order.ShippingAddress.City}",
-                FirstName = order.ShippingAddress.FullName,
-                LastName = order.ShippingAddress.LastName,
-                Email = order.EmailAddress,
-                DaytimePhoneNumber = order.PhoneNumber,
-                Line1 = order.ShippingAddress.StreetAddress,
-                PostalCode = order.ShippingAddress.PostalCode,
-                City = order.ShippingAddress.City,
-                CountryName = order.ShippingAddress.CountryCode,
-                CountryCode = cart.GetFirstShipment().ShippingAddress?.CountryCode,
-            };
-            
-            cart.GetFirstShipment().ShippingAddress = _addressBookService.ConvertToAddress(shippingAddress, cart);
-            
-            cart.ProcessPayments(_paymentProcessor, _orderGroupCalculator);
+    payment.BillingAddress = _addressBookService.ConvertToAddress(billingAddress, cart);
 
-            var totalProcessedAmount = cart.GetFirstForm().Payments.Where(x => x.Status.Equals(PaymentStatus.Processed.ToString())).Sum(x => x.Amount);
-            if (totalProcessedAmount != cart.GetTotal(_orderGroupCalculator).Amount)
-            {
-                throw new InvalidOperationException("Wrong amount");
-            }
+    var shippingAddress = new AddressModel
+    {
+        Name = $"{order.ShippingAddress.StreetAddress}{order.ShippingAddress.PostalCode}{order.ShippingAddress.City}",
+        FirstName = order.ShippingAddress.FullName,
+        LastName = order.ShippingAddress.LastName,
+        Email = order.EmailAddress,
+        DaytimePhoneNumber = order.PhoneNumber,
+        Line1 = order.ShippingAddress.StreetAddress,
+        PostalCode = order.ShippingAddress.PostalCode,
+        City = order.ShippingAddress.City,
+        CountryName = order.ShippingAddress.CountryCode,
+        CountryCode = cart.GetFirstShipment().ShippingAddress?.CountryCode,
+    };
 
-            _cartService.RequestInventory(cart);
+    cart.GetFirstShipment().ShippingAddress = _addressBookService.ConvertToAddress(shippingAddress, cart);
 
-            var orderReference = _orderRepository.SaveAsPurchaseOrder(cart);
-            var purchaseOrder = _orderRepository.Load<IPurchaseOrder>(orderReference.OrderGroupId);
-            _orderRepository.Delete(cart.OrderLink);
+    cart.ProcessPayments(_paymentProcessor, _orderGroupCalculator);
 
-            if (purchaseOrder == null)
-            {
-                return null;
-            }
-            else
-            {
-                purchaseOrder.Properties[Constants.SveaWebPayOrderIdField] = sveaWebPayOrderId;
-                _orderRepository.Save(purchaseOrder);
-                return purchaseOrder;
-            }
-        }
+    var totalProcessedAmount = cart.GetFirstForm().Payments.Where(x => x.Status.Equals(PaymentStatus.Processed.ToString())).Sum(x => x.Amount);
+    if (totalProcessedAmount != cart.GetTotal(_orderGroupCalculator).Amount)
+    {
+        throw new InvalidOperationException("Wrong amount");
+    }
+
+    _cartService.RequestInventory(cart);
+
+    var orderReference = _orderRepository.SaveAsPurchaseOrder(cart);
+    var purchaseOrder = _orderRepository.Load<IPurchaseOrder>(orderReference.OrderGroupId);
+    _orderRepository.Delete(cart.OrderLink);
+
+    if (purchaseOrder == null)
+    {
+        return null;
+    }
+    else
+    {
+        purchaseOrder.Properties[Constants.SveaWebPayOrderIdField] = sveaWebPayOrderId;
+        _orderRepository.Save(purchaseOrder);
+        return purchaseOrder;
+    }
+}
 ```
 
 To initialize Svea checkout when loading the GUI, update GetPaymentMethodViewModels methods in Foundation/Features/Checkout/ViewModels/PaymentMethodViewModelFactory.cs
@@ -422,18 +437,14 @@ namespace Foundation.Features.Checkout
         private readonly IOrderRepository _orderRepository;
         private static readonly ILogger _log = LogManager.GetLogger(typeof(SveaWebPayCheckoutController));
 
-        private readonly ISveaWebPayCheckoutService _sveaWebPayCheckoutService;
-
         public SveaWebPayCheckoutController(
             ICartService cartService,
             CheckoutService checkoutService,
-            IOrderRepository orderRepository,
-            ISveaWebPayCheckoutService sveaWebPayCheckoutService)
+            IOrderRepository orderRepository)
         {
             _cartService = cartService;
             _checkoutService = checkoutService;
             _orderRepository = orderRepository;
-            _sveaWebPayCheckoutService = sveaWebPayCheckoutService;
         }
 
         [HttpGet]
@@ -461,7 +472,7 @@ namespace Foundation.Features.Checkout
         [Route("push/{orderGroupId}/{orderId?}")]
         public IHttpActionResult Push(int orderGroupId, long orderId)
         {
-            var purchaseOrder = GetOrCreatePurchaseOrder(orderGroupId, orderId, out var status);
+            var purchaseOrder = _checkoutService.GetOrCreatePurchaseOrder(orderGroupId, orderId, out var status);
             if (purchaseOrder == null)
             {
                 return new StatusCodeResult(status, this);
@@ -499,9 +510,7 @@ Add view Foundation\\Features\\MyAccount\\OrderConfirmation\\_SveaWebPayCheckout
 ```html
 <div class="quicksilver-well">
 	<h4>@Html.Translate("/OrderConfirmation/PaymentDetails")</h4>
-	<p>
-		svea web pay description
-	</p>
+	<p>@Model.PaymentMethodName</p>
 </div>
 ```
 

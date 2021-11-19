@@ -156,7 +156,7 @@ namespace Svea.WebPay.Episerver.Checkout
                 capturePaymentStep.SetSuccessor(creditPaymentStep);
                 creditPaymentStep.SetSuccessor(cancelPaymentStep);
 
-                return authorizePaymentStep.Process(payment, _orderForm, OrderGroup, _shipment);
+                return AsyncHelper.RunSync(() => authorizePaymentStep.Process(payment, _orderForm, OrderGroup, _shipment));
             }
             catch (Exception ex)
             {

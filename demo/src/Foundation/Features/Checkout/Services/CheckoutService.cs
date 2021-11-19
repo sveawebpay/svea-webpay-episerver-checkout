@@ -6,6 +6,7 @@ using EPiServer.Framework.Localization;
 using EPiServer.Logging;
 using EPiServer.Security;
 using EPiServer.Web.Routing;
+
 using Foundation.Cms.Settings;
 using Foundation.Commerce;
 using Foundation.Commerce.Customer.Services;
@@ -13,12 +14,19 @@ using Foundation.Features.Checkout.ViewModels;
 using Foundation.Features.MyAccount.AddressBook;
 using Foundation.Features.Settings;
 using Foundation.Features.Shared;
+
 using Mediachase.Commerce.Customers;
 using Mediachase.Commerce.Orders;
 using Mediachase.Commerce.Orders.Exceptions;
 using Mediachase.Commerce.Orders.Managers;
 using Mediachase.Commerce.Security;
 using Mediachase.Web.Console.Common;
+
+using Svea.WebPay.Episerver.Checkout;
+using Svea.WebPay.Episerver.Checkout.Common;
+using Svea.WebPay.Episerver.Checkout.Common.Extensions;
+using Svea.WebPay.SDK.CheckoutApi;
+
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -28,10 +36,7 @@ using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using System.Web.Mvc;
-using Svea.WebPay.Episerver.Checkout;
-using Svea.WebPay.Episerver.Checkout.Common;
-using Svea.WebPay.Episerver.Checkout.Common.Extensions;
-using Svea.WebPay.SDK.CheckoutApi;
+
 using PaymentType = Mediachase.Commerce.Orders.PaymentType;
 
 namespace Foundation.Features.Checkout.Services
@@ -444,7 +449,7 @@ namespace Foundation.Features.Checkout.Services
                     return null;
                 }
 
-                var order = _sveaWebPayCheckoutService.GetOrder(cart);
+                var order = AsyncHelper.RunSync(() => _sveaWebPayCheckoutService.GetOrder(cart));
                 if (!order.Status.Equals(CheckoutOrderStatus.Final))
                 {
                     // Won't create order, Svea webpay checkout not complete

@@ -107,7 +107,7 @@ namespace Foundation.Features.Checkout.Payments
                 CheckoutConfiguration = _sveaWebPayCheckoutService.LoadCheckoutConfiguration(market, currentLanguage.TwoLetterISOLanguageName);
 
                 VerifyCartHasShippingCountry(cart);
-                var paymentOrder = _sveaWebPayCheckoutService.CreateOrUpdateOrder(cart, _languageService.GetCurrentLanguage(), true);
+                var paymentOrder = AsyncHelper.RunSync(() => _sveaWebPayCheckoutService.CreateOrUpdateOrder(cart, _languageService.GetCurrentLanguage(), true));
                 HtmlSnippet = paymentOrder?.Gui.Snippet;
                 _isInitalized = paymentOrder != null;
             }
