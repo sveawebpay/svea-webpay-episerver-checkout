@@ -63,8 +63,10 @@ namespace Svea.WebPay.Episerver.Checkout.Common
             var configuration = _checkoutConfigurationLoader.GetConfiguration(market.MarketId, currentLanguage.TwoLetterISOLanguageName);
             var orderRows = GetOrderRows(orderGroup, market, includeTaxOnLineItems, temporaryReference, merchantData);
             var clientOrderNumber = DateTime.Now.Ticks.ToString();
-
-            return new CreateOrderModel(new RegionInfo(CountryCodeHelper.GetTwoLetterCountryCode(market.MarketId.Value)), new CurrencyCode(orderGroup.Currency.CurrencyCode),
+            var language = new CultureInfo(currentLanguage.TextInfo.CultureName);
+            var regionInfo = new RegionInfo(language.LCID);
+            
+            return new CreateOrderModel(regionInfo, new CurrencyCode(orderGroup.Currency.CurrencyCode),
                 new Language(currentLanguage.TextInfo.CultureName), clientOrderNumber,
                 GetMerchantSettings(configuration, orderGroup, clientOrderNumber),
                 new Cart(orderRows), configuration.RequireElectronicIdAuthentication, presetValues, identityFlags, partnerKey, merchantData);
