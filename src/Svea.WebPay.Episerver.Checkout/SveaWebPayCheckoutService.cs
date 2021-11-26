@@ -58,7 +58,7 @@ namespace Svea.WebPay.Episerver.Checkout
                 return null;
             }
 
-            if (long.TryParse(orderGroup.Properties[Constants.SveaWebPayOrderIdField]?.ToString(), out var orderId))
+            if (long.TryParse(orderGroup.Properties[Constants.SveaWebPayOrderIdField]?.ToString(), out var orderId) && orderGroup.Properties[Constants.Culture]?.ToString() == currentLanguage.TwoLetterISOLanguageName)
             {
                 return await UpdateOrder(orderGroup, currentLanguage, orderId, includeTaxOnLineItems, temporaryReference, presetValues, identityFlags, partnerKey, merchantData).ConfigureAwait(false);
             }
