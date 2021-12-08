@@ -518,4 +518,6 @@ Add view Foundation\\Features\\MyAccount\\OrderConfirmation\\_SveaWebPayCheckout
 ## Misc
 * Supported languages: swedish, norwegian, danish, finnish and german
 * Supported currencies: SEK, NOK, DKK and EUR
+* Supported VAT percentages: 0, 6, 7, 10, 12, 14, 15, 17-27
+* For best functionality, the market should be configured with prices that include tax.
 * A common issue when setting up Svea Checkout is that the thank you page isn't displayed after a completed purchase. That's because the Index action in `Foundation.Features.MyAccount.OrderConfirmation.OrderConfirmationController` expects an orderNumber, and the order is created first on callback. Therefore, you will be redirected to the start page and the cart disappears on the callback. This logic is part of the Foundation and needs to be adjusted to suite your needs.
