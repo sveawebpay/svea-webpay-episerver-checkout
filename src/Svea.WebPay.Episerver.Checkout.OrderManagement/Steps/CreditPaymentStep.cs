@@ -58,8 +58,9 @@ namespace Svea.WebPay.Episerver.Checkout.OrderManagement.Steps
                                     var paymentAmount = payment.Amount;
                                     var returnSum = _returnOrderFormCalculator.GetReturnOrderFormTotals(returnForm, _market, orderGroup.Currency).Total;
                                     bool creditAmountIsOtherThanSum = paymentAmount != returnSum;
-
-                                    if (creditAmountIsOtherThanSum && ActionsValidationHelper.ValidateDeliveryAction(paymentOrder, delivery.Id, DeliveryActionType.CanCreditNewRow).Item1)
+                                    var orderDiscountTotal = _returnOrderFormCalculator.GetOrderDiscountTotal(returnForm, orderGroup.Currency);
+                                    
+                                    if ((creditAmountIsOtherThanSum || orderDiscountTotal > 0) && ActionsValidationHelper.ValidateDeliveryAction(paymentOrder, delivery.Id, DeliveryActionType.CanCreditNewRow).Item1)
                                     {
                                         var creditNewOrderRowRequest = _requestFactory.GetCreditNewOrderRowRequest((OrderForm)returnForm, payment, shipment, _market, orderGroup.Currency);
                                         var creditResponseObject = await delivery.Actions.CreditNewRow(creditNewOrderRowRequest, pollingTimeout).ConfigureAwait(false);
@@ -80,7 +81,7 @@ namespace Svea.WebPay.Episerver.Checkout.OrderManagement.Steps
                                     else if (ActionsValidationHelper.ValidateOrderAction(paymentOrder, OrderActionType.CanCancelAmount).Item1)
                                     {
                                         var cancelAmountRequest = _requestFactory.GetCancelAmountRequest(paymentOrder, payment, shipment);
-                                        AsyncHelper.RunSync(() => paymentOrder.Actions.CancelAmount(cancelAmountRequest));
+                                        await paymentOrder.Actions.CancelAmount(cancelAmountRequest);
                                     }
 
 
