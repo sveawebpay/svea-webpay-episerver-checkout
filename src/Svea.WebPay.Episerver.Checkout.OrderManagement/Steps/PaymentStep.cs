@@ -9,6 +9,7 @@ using Svea.WebPay.Episerver.Checkout.Common.Extensions;
 using Svea.WebPay.SDK;
 
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Svea.WebPay.Episerver.Checkout.OrderManagement.Steps
 {
@@ -37,7 +38,7 @@ namespace Svea.WebPay.Episerver.Checkout.OrderManagement.Steps
             Successor = successor;
         }
 
-        public abstract PaymentStepResult Process(IPayment payment, IOrderForm orderForm, IOrderGroup orderGroup,
+        public abstract Task<PaymentStepResult> Process(IPayment payment, IOrderForm orderForm, IOrderGroup orderGroup,
             IShipment shipment);
 
         public void AddNoteAndSaveChanges(IOrderGroup orderGroup, string transactionType, string noteMessage)

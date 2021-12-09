@@ -6,7 +6,7 @@ namespace Foundation.SystemTests.PageObjectModels.Payment
 
     public class NordeaPaymentPage : Page<_>
     {
-        [FindByContent("Lyckad betalning")] 
+        [FindByContent("Lyckad betalning")]
         public Button<_> Success { get; set; }
 
         [FindByContent("Avbruten betalning")]

@@ -33,6 +33,10 @@ namespace Svea.WebPay.Episerver.Checkout
         internal Injected<IRequestFactory> InjectedRequestFactory { get; set; }
         private IRequestFactory RequestFactory => InjectedRequestFactory.Service;
 
+        internal Injected<IReturnOrderFormCalculator> InjectedReturnOrderFormCalculator { get; set; }
+        private IReturnOrderFormCalculator ReturnOrderFormCalculator => InjectedReturnOrderFormCalculator.Service;
+        
+
 
         /// <summary>
         /// Returns the configuration data associated with a plugin.
@@ -145,14 +149,14 @@ namespace Svea.WebPay.Episerver.Checkout
                 
                 var authorizePaymentStep = new AuthorizePaymentStep(payment, market, SveaWebPayClientFactory);
                 var capturePaymentStep = new CapturePaymentStep(payment, market, SveaWebPayClientFactory, RequestFactory);
-                var creditPaymentStep = new CreditPaymentStep(payment, market, SveaWebPayClientFactory, RequestFactory);
+                var creditPaymentStep = new CreditPaymentStep(payment, market, SveaWebPayClientFactory, RequestFactory, ReturnOrderFormCalculator);
                 var cancelPaymentStep = new CancelPaymentStep(payment, market, SveaWebPayClientFactory, RequestFactory);
 
                 authorizePaymentStep.SetSuccessor(capturePaymentStep);
                 capturePaymentStep.SetSuccessor(creditPaymentStep);
                 creditPaymentStep.SetSuccessor(cancelPaymentStep);
 
-                return authorizePaymentStep.Process(payment, _orderForm, OrderGroup, _shipment);
+                return AsyncHelper.RunSync(() => authorizePaymentStep.Process(payment, _orderForm, OrderGroup, _shipment));
             }
             catch (Exception ex)
             {

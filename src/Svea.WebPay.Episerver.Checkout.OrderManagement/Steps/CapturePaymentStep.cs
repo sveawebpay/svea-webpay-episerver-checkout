@@ -5,8 +5,11 @@ using Mediachase.Commerce;
 using Mediachase.Commerce.Orders;
 
 using Svea.WebPay.Episerver.Checkout.Common;
+using Svea.WebPay.Episerver.Checkout.Common.Helpers;
+using Svea.WebPay.SDK.PaymentAdminApi;
 
 using System;
+using System.Threading.Tasks;
 
 using Constants = Svea.WebPay.Episerver.Checkout.Common.Constants;
 using TransactionType = Mediachase.Commerce.Orders.TransactionType;
@@ -20,16 +23,16 @@ namespace Svea.WebPay.Episerver.Checkout.OrderManagement.Steps
         private readonly IRequestFactory _requestFactory;
 
         public CapturePaymentStep(
-            IPayment payment, 
-            IMarket market, 
-            SveaWebPayClientFactory sveaWebPayClientFactory, 
+            IPayment payment,
+            IMarket market,
+            SveaWebPayClientFactory sveaWebPayClientFactory,
             IRequestFactory requestFactory) : base(payment, market, sveaWebPayClientFactory)
         {
             _market = market;
             _requestFactory = requestFactory;
         }
 
-        public override PaymentStepResult Process(IPayment payment, IOrderForm orderForm, IOrderGroup orderGroup, IShipment shipment)
+        public override async Task<PaymentStepResult> Process(IPayment payment, IOrderForm orderForm, IOrderGroup orderGroup, IShipment shipment)
         {
             var paymentStepResult = new PaymentStepResult();
 
@@ -45,19 +48,20 @@ namespace Svea.WebPay.Episerver.Checkout.OrderManagement.Steps
                             throw new InvalidOperationException("Can't find correct shipment");
                         }
 
-                        var paymentOrder = AsyncHelper.RunSync(() => SveaWebPayClient.PaymentAdmin.GetOrder(orderId));
-                        if (paymentOrder.Actions.DeliverOrder == null)
+                        var paymentOrder = await SveaWebPayClient.PaymentAdmin.GetOrder(orderId).ConfigureAwait(false);
+                        var (isValid, errorMessage) = ActionsValidationHelper.ValidateOrderAction(paymentOrder, OrderActionType.CanDeliverOrder);
+                        if (!isValid)
                         {
+                            AddNoteAndSaveChanges(orderGroup, payment.TransactionType, errorMessage);
                             AddNoteAndSaveChanges(orderGroup, payment.TransactionType, $"Deliver Order/Capture is not possible on this order {orderId}");
                             return paymentStepResult;
                         }
 
-                        var pollingTimeout = TimeSpan.FromSeconds(3);
-                        var deliveryRequest = _requestFactory.GetDeliveryRequest(payment, _market, shipment, paymentOrder, pollingTimeout);
+                        var deliveryRequest = _requestFactory.GetDeliveryRequest(payment, _market, shipment, paymentOrder);
+                        var pollingTimeout = new PollingTimeout(15);
+                        var order = await paymentOrder.Actions.DeliverOrder(deliveryRequest, pollingTimeout).ConfigureAwait(false);
 
-                        var order = AsyncHelper.RunSync(() => paymentOrder.Actions.DeliverOrder(deliveryRequest));
-                        
-                        AddNoteAndSaveChanges(orderGroup, payment.TransactionType, $"Order delivered at Svea WebPay");
+                        AddNoteAndSaveChanges(orderGroup, payment.TransactionType, $"Order delivered at Svea WebPay: {order.ResourceUri.AbsoluteUri}");
                         paymentStepResult.Status = true;
 
                         return paymentStepResult;
@@ -77,7 +81,7 @@ namespace Svea.WebPay.Episerver.Checkout.OrderManagement.Steps
 
             if (Successor != null)
             {
-                return Successor.Process(payment, orderForm, orderGroup, shipment);
+                return await Successor.Process(payment, orderForm, orderGroup, shipment).ConfigureAwait(false);
             }
 
             return paymentStepResult;

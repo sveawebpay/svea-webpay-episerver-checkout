@@ -3,7 +3,6 @@ using Foundation.SystemTests.Tests.Base;
 using Foundation.SystemTests.Tests.Helpers;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using System;
 using System.Linq;
 
 namespace Foundation.SystemTests.Tests.PaymentTest.PaymentCancellationTests
@@ -14,6 +13,7 @@ namespace Foundation.SystemTests.Tests.PaymentTest.PaymentCancellationTests
         public PaymentCancellationTests(string driverAlias) : base(driverAlias) { }
 
         [Test]
+        [RetryWithException(2)]
         [Category(TestCategory.Card)]
         [TestCaseSource(nameof(TestData), new object[] { false })]
         public async Task Cancellation_With_CardAsync(Product[] products)
@@ -42,7 +42,7 @@ namespace Foundation.SystemTests.Tests.PaymentTest.PaymentCancellationTests
             Assert.That(order.OrderStatus, Is.EqualTo(Svea.WebPay.SDK.PaymentAdminApi.OrderStatus.Cancelled));
             Assert.That(order.PaymentType, Is.EqualTo(Svea.WebPay.SDK.PaymentAdminApi.PaymentType.Card));
             Assert.That(order.AvailableActions.Count, Is.EqualTo(0));
-            Assert.That(order.CancelledAmount.Value, Is.EqualTo(_totalAmount * 100));
+            Assert.That(order.CancelledAmount.InLowestMonetaryUnit, Is.EqualTo(_totalAmount * 100));
 
             Assert.IsTrue(order.OrderRows.Any(item => item.Name.ToUpper() == products[0].Name.ToUpper()));
             Assert.IsTrue(order.OrderRows.Any(item => item.Name.ToUpper() == products[1].Name.ToUpper()));
