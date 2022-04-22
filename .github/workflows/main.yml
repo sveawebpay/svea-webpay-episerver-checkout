@@ -137,7 +137,7 @@ jobs:
   build-demo-site:
     name: Build and deploy demo site
     needs: [variables, build-plugin]
-    runs-on: windows-latest
+    runs-on: windows-2019
 
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
