@@ -76,7 +76,8 @@ namespace Svea.WebPay.Episerver.Checkout.CommerceManager.Apps.Order.Payments.Plu
                 CheckoutApiUri = !string.IsNullOrWhiteSpace(txtCheckoutApiUri.Text) ? new Uri(txtCheckoutApiUri.Text) : null,
                 PaymentAdminApiUri = !string.IsNullOrWhiteSpace(txtPaymentAdminApiUri.Text) ? new Uri(txtPaymentAdminApiUri.Text) : null,
                 MerchantId = txtMerchantId.Text,
-                Secret = txtSecret.Text
+                Secret = txtSecret.Text,
+                ConnectionClose = chkConnectionClose.Checked
             };
 
             try
@@ -143,6 +144,7 @@ namespace Svea.WebPay.Episerver.Checkout.CommerceManager.Apps.Order.Payments.Plu
             txtPaymentAdminApiUri.Text = checkoutConfiguration.PaymentAdminApiUri?.ToString();
             txtMerchantId.Text = checkoutConfiguration.MerchantId;
             txtSecret.Text = checkoutConfiguration.Secret;
+            chkConnectionClose.Checked = checkoutConfiguration.ConnectionClose;
 
             txtPushUri.Text = checkoutConfiguration.PushUri?.ToString();
             txtTermsUri.Text = checkoutConfiguration.TermsUri?.ToString();
