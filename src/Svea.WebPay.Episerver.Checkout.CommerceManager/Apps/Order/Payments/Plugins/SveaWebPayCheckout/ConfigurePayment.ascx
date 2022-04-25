@@ -114,6 +114,17 @@
 								<asp:RequiredFieldValidator ID="requiredSecret" runat="server" ControlToValidate="txtSecret" ErrorMessage="Secret is required." />
 							</td>
 						</tr>
+					
+                        <tr>
+                            <td class="FormLabelCell">
+                                <p>Disable reuse of Http Connections to Svea SDK: </p>
+                                <i></i>
+                            </td>
+                            <td class="FormFieldCell">
+                                <asp:CheckBox runat="server" ID="chkConnectionClose" CssClass="" />
+                            </td>
+                        </tr>
+
 					</tbody>
 				</table>
 

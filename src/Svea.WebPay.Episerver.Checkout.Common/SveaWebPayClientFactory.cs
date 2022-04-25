@@ -59,11 +59,12 @@ namespace Svea.WebPay.Episerver.Checkout.Common
                 var client = new Lazy<HttpClient>(() => new HttpClient(handler)
                 {
                     BaseAddress = connectionConfiguration.CheckoutApiUri,
-                    Timeout = TimeSpan.FromMinutes(1)
+                    Timeout = TimeSpan.FromMinutes(1),
+                    DefaultRequestHeaders = { ConnectionClose = connectionConfiguration.ConnectionClose}
                 });
 
                 var sp = ServicePointManager.FindServicePoint(connectionConfiguration.CheckoutApiUri);
-                sp.ConnectionLeaseTimeout = 60 * 1000; // 1 minute
+                sp.ConnectionLeaseTimeout = (int)TimeSpan.FromMinutes(1).TotalMilliseconds;
 
                 return client;
             });
@@ -73,11 +74,12 @@ namespace Svea.WebPay.Episerver.Checkout.Common
                 var client = new Lazy<HttpClient>(() => new HttpClient(handler)
                 {
                     BaseAddress = connectionConfiguration.PaymentAdminApiUri,
-                    Timeout = TimeSpan.FromMinutes(1)
+                    Timeout = TimeSpan.FromMinutes(1),
+                    DefaultRequestHeaders = { ConnectionClose = connectionConfiguration.ConnectionClose }
                 });
 
                 var sp = ServicePointManager.FindServicePoint(connectionConfiguration.PaymentAdminApiUri);
-                sp.ConnectionLeaseTimeout = 60 * 1000; // 1 minute
+                sp.ConnectionLeaseTimeout = (int)TimeSpan.FromMinutes(1).TotalMilliseconds;
                 return client;
             });
 
