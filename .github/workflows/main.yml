@@ -27,16 +27,16 @@ env:
 jobs:
   build-plugin:
     name: Build plugin packages
-    runs-on: windows-latest
+    runs-on: windows-2019
     env: 
       ARTIFACT_STAGING_PATH: ${{ github.workspace }}/artifacts
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:          
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-    - uses: actions/checkout@v2.4.0
+    - uses: actions/checkout@v3.0.2
 
     - name: Install GitVersion
-      uses: gittools/actions/gitversion/setup@v0.9.11
+      uses: gittools/actions/gitversion/setup@v0.9.13
       with:
         versionSpec: '5.x.x'
  
@@ -45,10 +45,10 @@ jobs:
  
     - name: Use GitVersion
       id: gitversion # step id used as reference for output values
-      uses: gittools/actions/gitversion/execute@v0.9.11
+      uses: gittools/actions/gitversion/execute@v0.9.13
 
     - name: Setup .NET Core
-      uses: actions/setup-dotnet@v1.9.0
+      uses: actions/setup-dotnet@v2.0.0
       with:
         dotnet-version: ${{ env.dotnetCoreVersion }}
  
@@ -66,7 +66,7 @@ jobs:
 
     - name: Publish nuget packages artifacts
       if: ${{ github.event_name != 'pull_request' }}
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         # Artifact name
         name: packages
@@ -86,7 +86,7 @@ jobs:
       CM_URL: ${{ steps.setoutputvariables.outputs.CM_URL }}
        
     steps:
-      - uses: actions/checkout@v2.4.0
+      - uses: actions/checkout@v3.0.2
 
       - name: Dump GitHub context
         env:
@@ -96,7 +96,7 @@ jobs:
 
 
       - name: Set dev environment variables
-        uses: allenevans/set-env@v2.1.0
+        uses: allenevans/set-env@v2.2.0
         if: ${{ startsWith(github.ref, 'refs/heads/develop') || github.base_ref == 'develop' }} 
         with: 
           ENVIRONMENT: dev
@@ -106,7 +106,7 @@ jobs:
           CM_URL: https://mgrsveaepiserver001dev.azurewebsites.net/
           
       - name: Set uat environment variables
-        uses: allenevans/set-env@v2.1.0
+        uses: allenevans/set-env@v2.2.0
         if: ${{ startsWith(github.ref, 'refs/heads/release/') || startsWith(github.ref, 'refs/heads/hotfix/') || contains(github.ref, '-beta')}} 
         with: 
           ENVIRONMENT: uat
@@ -116,7 +116,7 @@ jobs:
           CM_URL: https://mgrsveaepiserver001uat.azurewebsites.net/
           
       - name: Set pro environment variables
-        uses: allenevans/set-env@v2.1.0
+        uses: allenevans/set-env@v2.2.0
         if: ${{ startsWith(github.ref, 'refs/tags/') && !contains(github.ref, 'refs/tags/*-*') }} 
         with: 
           ENVIRONMENT: pro
@@ -137,14 +137,14 @@ jobs:
   build-demo-site:
     name: Build and deploy demo site
     needs: [variables, build-plugin]
-    runs-on: windows-latest
+    runs-on: windows-2019
 
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v2.4.0
+      - uses: actions/checkout@v3.0.2
 
       - name: Install GitVersion
-        uses: gittools/actions/gitversion/setup@v0.9.11
+        uses: gittools/actions/gitversion/setup@v0.9.13
         with:
           versionSpec: '5.x.x'
  
@@ -153,13 +153,13 @@ jobs:
  
       - name: Use GitVersion
         id: gitversion # step id used as reference for output values
-        uses: gittools/actions/gitversion/execute@v0.9.11
+        uses: gittools/actions/gitversion/execute@v0.9.13
         with:
           updateAssemblyInfo: true
           updateAssemblyInfoFilename: ./demo/src/Foundation/Properties/AssemblyInfo.cs 
 
       - name: Setup .NET Core
-        uses: actions/setup-dotnet@v1.9.0
+        uses: actions/setup-dotnet@v2.0.0
         with:
           dotnet-version: ${{ env.dotnetCoreVersion }}
 
@@ -167,7 +167,7 @@ jobs:
         uses: microsoft/setup-msbuild@v1
         
       - name: Setup NuGet.exe for use with actions
-        uses: NuGet/setup-nuget@v1.0.5
+        uses: NuGet/setup-nuget@v1.0.6
       
       - name: Restore packages
         run: nuget restore demo/Foundation.sln
@@ -256,7 +256,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download All artifacts
-        uses: actions/download-artifact@v2   
+        uses: actions/download-artifact@v3   
     
       - name: Publish to nuget
         run: dotnet nuget push 'packages/*.nupkg' --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }} --skip-duplicate

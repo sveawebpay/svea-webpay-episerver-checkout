@@ -36,6 +36,10 @@ namespace Foundation.Features.Checkout.ViewModels
         {
             var currentMarket = _currentMarket.GetCurrentMarket().MarketId;
             var currentLanguage = _languageService.GetCurrentLanguage().TwoLetterISOLanguageName;
+            if (currentLanguage == "nb")
+            {
+                currentLanguage = "no";
+            }
             var availablePaymentMethods = _paymentService.GetPaymentMethodsByMarketIdAndLanguageCode(currentMarket.Value, currentLanguage);
             var availableCustomerGiftCards = _giftCardService.GetCustomerGiftCards(CustomerContext.Current.CurrentContactId.ToString()).Where(g => g.IsActive == true);
 

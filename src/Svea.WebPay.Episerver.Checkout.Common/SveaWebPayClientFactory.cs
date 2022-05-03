@@ -19,7 +19,7 @@ namespace Svea.WebPay.Episerver.Checkout.Common
     [ServiceConfiguration(typeof(ISveaWebPayClientFactory), Lifecycle = ServiceInstanceScope.Singleton)]
     public class SveaWebPayClientFactory : ISveaWebPayClientFactory
     {
-        protected static readonly ConcurrentDictionary<string, HttpClient> HttpClientCache = new ConcurrentDictionary<string, HttpClient>();
+        protected static readonly ConcurrentDictionary<string, Lazy<HttpClient>> HttpClientCache = new ConcurrentDictionary<string, Lazy<HttpClient>>();
         private readonly ICheckoutConfigurationLoader _checkoutConfigurationLoader;
         
         public SveaWebPayClientFactory(ICheckoutConfigurationLoader checkoutConfigurationLoader)
@@ -45,8 +45,8 @@ namespace Svea.WebPay.Episerver.Checkout.Common
 
         private static ISveaClient GetSveaWebPayClient(ConnectionConfiguration connectionConfiguration)
         {
-            var checkoutKey = $"{connectionConfiguration.CheckoutApiUri}:{connectionConfiguration.MerchantId}:{connectionConfiguration.Secret}";
-            var paymentAdminKey = $"{connectionConfiguration.PaymentAdminApiUri}:{connectionConfiguration.MerchantId}:{connectionConfiguration.Secret}";
+            var checkoutKey = $"{connectionConfiguration.CheckoutApiUri}";
+            var paymentAdminKey = $"{connectionConfiguration.PaymentAdminApiUri}";
 
             HttpClientHandler handler = new HttpClientHandler()
             {
@@ -56,31 +56,34 @@ namespace Svea.WebPay.Episerver.Checkout.Common
 
             var checkoutApiHttpClient = HttpClientCache.GetOrAdd(checkoutKey, k =>
             {
-                var client = new HttpClient(handler)
+                var client = new Lazy<HttpClient>(() => new HttpClient(handler)
                 {
                     BaseAddress = connectionConfiguration.CheckoutApiUri,
-                    Timeout = TimeSpan.FromMinutes(10)
-                };
+                    Timeout = TimeSpan.FromMinutes(1),
+                    DefaultRequestHeaders = { ConnectionClose = connectionConfiguration.ConnectionClose}
+                });
 
                 var sp = ServicePointManager.FindServicePoint(connectionConfiguration.CheckoutApiUri);
-                sp.ConnectionLeaseTimeout = 60 * 1000; // 1 minute
+                sp.ConnectionLeaseTimeout = (int)TimeSpan.FromMinutes(1).TotalMilliseconds;
+
                 return client;
             });
 
             var paymentAdminApiHttpClient = HttpClientCache.GetOrAdd(paymentAdminKey, k =>
             {
-                var client = new HttpClient(handler)
+                var client = new Lazy<HttpClient>(() => new HttpClient(handler)
                 {
                     BaseAddress = connectionConfiguration.PaymentAdminApiUri,
-                    Timeout = TimeSpan.FromMinutes(10)
-                };
+                    Timeout = TimeSpan.FromMinutes(1),
+                    DefaultRequestHeaders = { ConnectionClose = connectionConfiguration.ConnectionClose }
+                });
 
                 var sp = ServicePointManager.FindServicePoint(connectionConfiguration.PaymentAdminApiUri);
-                sp.ConnectionLeaseTimeout = 60 * 1000; // 1 minute
+                sp.ConnectionLeaseTimeout = (int)TimeSpan.FromMinutes(1).TotalMilliseconds;
                 return client;
             });
 
-            return new SveaWebPayClient(checkoutApiHttpClient, paymentAdminApiHttpClient, new Credentials(connectionConfiguration.MerchantId, connectionConfiguration.Secret));
+            return new SveaWebPayClient(checkoutApiHttpClient.Value, paymentAdminApiHttpClient.Value, new Credentials(connectionConfiguration.MerchantId, connectionConfiguration.Secret));
         }
     }
 }

@@ -9,5 +9,6 @@ namespace Svea.WebPay.Episerver.Checkout.Common
         public string Secret { get; set; }
         public Uri CheckoutApiUri { get; set; }
         public Uri PaymentAdminApiUri { get; set; }
+        public bool ConnectionClose { get; set; }
     }
 }
