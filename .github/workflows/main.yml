@@ -48,7 +48,7 @@ jobs:
       uses: gittools/actions/gitversion/execute@v0.9.13
 
     - name: Setup .NET Core
-      uses: actions/setup-dotnet@v2.0.0
+      uses: actions/setup-dotnet@v3.0.2
       with:
         dotnet-version: ${{ env.dotnetCoreVersion }}
  
@@ -159,7 +159,7 @@ jobs:
           updateAssemblyInfoFilename: ./demo/src/Foundation/Properties/AssemblyInfo.cs 
 
       - name: Setup .NET Core
-        uses: actions/setup-dotnet@v2.0.0
+        uses: actions/setup-dotnet@v3.0.2
         with:
           dotnet-version: ${{ env.dotnetCoreVersion }}
 
